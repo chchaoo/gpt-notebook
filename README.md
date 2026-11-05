@@ -4,7 +4,7 @@ Read, edit and export your ChatGPT conversations — locally, in one HTML file.
 
 **English** · [简体中文](README.zh-CN.md)
 
-[Download HTML](https://github.com/chchaoo/gpt-notebook/raw/refs/heads/main/gpt-notebook.html) · [Wiki manual](https://github.com/chchaoo/gpt-notebook/wiki/English-Manual) · [Build from source](https://github.com/chchaoo/gpt-notebook/wiki/Build-from-Source)
+[Download HTML](https://github.com/chchaoo/gpt-notebook/releases/latest/download/gpt-notebook.html) · [Wiki manual](https://github.com/chchaoo/gpt-notebook/wiki/English-Manual) · [Build from source](https://github.com/chchaoo/gpt-notebook/wiki/Build-from-Source)
 
 ![GPT Notebook reading a fictional sample](docs/images/en/reading.png)
 

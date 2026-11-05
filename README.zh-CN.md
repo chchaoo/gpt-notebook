@@ -4,7 +4,7 @@
 
 **简体中文** · [English](README.md)
 
-[下载 HTML](https://github.com/chchaoo/gpt-notebook/raw/refs/heads/main/gpt-notebook.html) · [Wiki 手册](https://github.com/chchaoo/gpt-notebook/wiki/中文手册) · [从源码构建](https://github.com/chchaoo/gpt-notebook/wiki/从源码构建)
+[下载 HTML](https://github.com/chchaoo/gpt-notebook/releases/latest/download/gpt-notebook.html) · [Wiki 手册](https://github.com/chchaoo/gpt-notebook/wiki/中文手册) · [从源码构建](https://github.com/chchaoo/gpt-notebook/wiki/从源码构建)
 
 ![GPT Notebook 阅读虚构样例](docs/images/zh-CN/reading.png)
 
