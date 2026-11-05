@@ -1,0 +1,7 @@
+# Preserve exact release bytes across Windows/Linux checkouts.
+* -text
+*.png binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.dat binary

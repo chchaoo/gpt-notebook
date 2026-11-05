@@ -1,0 +1,113 @@
+{
+  "builder": "esbuild 0.25.12",
+  "entry": "@toast-ui/editor/dist/esm/index.js",
+  "override": "DOMPurify 3.4.17",
+  "packages": [
+    {
+      "name": "dompurify",
+      "version": "3.4.17",
+      "license": "(MPL-2.0 OR Apache-2.0)",
+      "licenseFiles": [
+        "licenses/dompurify-LICENSE",
+        "licenses/dompurify-LICENSE-MPL"
+      ]
+    },
+    {
+      "name": "orderedmap",
+      "version": "2.1.1",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/orderedmap-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-model",
+      "version": "1.25.12",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-model-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-transform",
+      "version": "1.12.4",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-transform-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-state",
+      "version": "1.4.4",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-state-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-view",
+      "version": "1.42.8",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-view-LICENSE"
+      ]
+    },
+    {
+      "name": "w3c-keyname",
+      "version": "2.2.8",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/w3c-keyname-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-keymap",
+      "version": "1.2.3",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-keymap-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-commands",
+      "version": "1.7.2",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-commands-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-inputrules",
+      "version": "1.5.1",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-inputrules-LICENSE"
+      ]
+    },
+    {
+      "name": "rope-sequence",
+      "version": "1.3.4",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/rope-sequence-LICENSE"
+      ]
+    },
+    {
+      "name": "prosemirror-history",
+      "version": "1.5.1",
+      "license": "MIT",
+      "licenseFiles": [
+        "licenses/prosemirror-history-LICENSE"
+      ]
+    },
+    {
+      "name": "@toast-ui/editor",
+      "version": "3.2.2",
+      "license": "MIT",
+      "licenseFiles": [
+        "LICENSE"
+      ],
+      "note": "The inlined old sanitizer instance is replaced with the explicit DOMPurify import before bundling."
+    }
+  ]
+}

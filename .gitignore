@@ -1,0 +1,22 @@
+node_modules/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+src/gpt-notebook.html
+src/tests/browser-check.html
+**/tmp*/
+.validation/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Personal source archives and app sidecars never belong in the software repo.
+.viewer-state/
+.viewer-backups/
+conversations*.json
+chat.html
+# Explicitly retain the synthetic fixture that ships with the regression tests.
+!src/tests/fixture/conversations.json
+
+!src/tests/fixture/**

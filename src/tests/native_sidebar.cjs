@@ -1,0 +1,28 @@
+/* Optional native Chromium regression. Start headless Edge with a temporary profile,
+   then pass PROFILE_DIR, BAKED_HTML, OUTPUT_DIR. No network or private chats. */
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
+const [profile,html,output]=process.argv.slice(2),pause=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+ let port;for(let i=0;i<100;i++){try{port=Number(fs.readFileSync(path.join(profile,'DevToolsActivePort'),'utf8').split('\n')[0]);break}catch(_){}await pause(100)}if(!port)throw Error('Browser debugger did not start');
+ const targets=await (await fetch('http://127.0.0.1:'+port+'/json/list')).json(),target=targets.find(t=>t.type==='page'),socket=new WebSocket(target.webSocketDebuggerUrl),pending=new Map();let serial=0;
+ socket.addEventListener('message',event=>{const result=JSON.parse(event.data);if(result.id&&pending.has(result.id)){const {resolve,reject}=pending.get(result.id);pending.delete(result.id);result.error?reject(Error(JSON.stringify(result.error))):resolve(result.result)}});
+ await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true})});
+ const send=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial;pending.set(id,{resolve,reject});socket.send(JSON.stringify({id,method,params}))});
+ const evaluate=async expression=>{const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails));return result.result.value};
+ const shot=async name=>{const result=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,name),Buffer.from(result.data,'base64'))};
+ fs.mkdirSync(output,{recursive:true});const report=[];
+ try{
+  await send('Page.enable');await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});await send('Emulation.setDeviceMetricsOverride',{width:680,height:850,deviceScaleFactor:1,mobile:false});await send('Page.navigate',{url:pathToFileURL(path.resolve(html)).href});
+  let ready=false;for(let i=0;i<100;i++){ready=await evaluate(`document.querySelectorAll('#msgs article').length>0`);if(ready)break;await pause(100)}assert.ok(ready,'baked app loaded');await evaluate(`document.getElementById('language').value='zh-CN';document.getElementById('language').dispatchEvent(new Event('change'))`);
+  for(const theme of ['light','dark','sepia','forest','rose','midnight','contrast','system']){
+   await evaluate(`document.getElementById('theme').value=${JSON.stringify(theme)};document.getElementById('theme').dispatchEvent(new Event('change'));if(!document.body.classList.contains('sidebar-open'))document.getElementById('menu').click()`);
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:40,y:750});await pause(30);const before=await evaluate(`getComputedStyle(document.getElementById('sidebar-shade')).backgroundColor`);if(theme==='light')await shot('窄屏_光标在侧栏.png');
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:630,y:380});await pause(30);const after=await evaluate(`getComputedStyle(document.getElementById('sidebar-shade')).backgroundColor`);assert.equal(after,before,theme);assert.equal(after,'rgba(0, 0, 0, 0.6)',theme);if(theme==='light')await shot('窄屏_光标在遮罩.png');report.push({theme,background:after});
+  }
+  await evaluate(`document.getElementById('sidebar-close').click()`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.sidebar')).display`),'none');await evaluate(`document.getElementById('menu').click()`);await send('Input.dispatchMouseEvent',{type:'mousePressed',x:630,y:380,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:630,y:380,button:'left',clickCount:1});assert.equal(await evaluate(`document.body.classList.contains('sidebar-open')`),false);
+  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});await pause(50);await evaluate(`document.getElementById('theme').value='light';document.getElementById('theme').dispatchEvent(new Event('change'))`);
+  const geometry=await evaluate(`(()=>{const s=document.querySelector('.sidebar').getBoundingClientRect(),b=document.getElementById('sidebar-close').getBoundingClientRect(),t=document.querySelector('.sb-logo-text').getBoundingClientRect();return {gap:s.right-b.right,overlap:t.right>b.left,buttonWidth:b.width}})()`);assert.ok(geometry.gap>=0&&geometry.gap<=20);assert.equal(geometry.overlap,false);assert.ok(geometry.buttonWidth>=28);
+  await evaluate(`document.getElementById('sidebar-close').click()`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.sidebar')).display`),'none');assert.equal(await evaluate(`getComputedStyle(document.getElementById('sidebar-resizer')).display`),'none');assert.ok(['flex','inline-flex'].includes(await evaluate(`getComputedStyle(document.getElementById('menu')).display`)));await shot('宽屏_侧栏收起.png');await evaluate(`document.getElementById('menu').click()`);assert.equal(await evaluate(`getComputedStyle(document.querySelector('.sidebar')).display`),'flex');await shot('宽屏_侧栏展开.png');
+  fs.writeFileSync(path.join(output,'原生浏览器验证.json'),JSON.stringify({browser:'Microsoft Edge headless',viewportWidths:[680,1280],themes:report,geometry,passed:true},null,2));console.log('Native Edge: hover stable for 8 appearance choices; mobile backdrop click, desktop collapse/reopen and header geometry passed.');
+ }finally{await send('Browser.close').catch(()=>{});socket.close()}
+})().catch(error=>{console.error(error);process.exitCode=1});

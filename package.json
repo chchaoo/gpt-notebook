@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@toast-ui/editor": "3.2.2",
+    "dompurify": "3.4.17",
+    "esbuild": "0.25.12",
+    "linkedom": "0.18.12"
+  },
+  "name": "gpt-notebook",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "build": "python tools/project.py build",
+    "test": "python tools/project.py test",
+    "verify": "python tools/project.py verify"
+  }
+}

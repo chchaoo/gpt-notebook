@@ -1,0 +1,38 @@
+# 用户的 ChatGPT 导出文件,绝对不能提交
+conversations*.json
+shared_conversations.json
+user.json
+user_settings.json
+library_files.json
+export_manifest.json
+chat.html
+viewer.html
+viewer-check*.jpg
+viewer-check*.jpeg
+
+# 用户的附件
+file-*
+file_*
+*.webp
+
+# DALL-E 生成图和会话子目录
+dalle-generations/
+user-*/
+# UUID 命名的会话目录
+????????-????-????-????-????????????/
+
+# OS 杂物
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+
+# Local synthetic test outputs and private real-export verification results
+tests/browser-check.html
+tests/fixture/
+tests/tmp*/
+tests/真实数据验收.json
+
+# Version-controlled synthetic fixtures; never replace them with private exports.
+!tests/fixture/
+!tests/fixture/**

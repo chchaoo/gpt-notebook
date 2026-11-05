@@ -1,0 +1,11 @@
+{
+  "product": "GPT Notebook",
+  "version": "1.0.0",
+  "repository": "https://github.com/chchaoo/gpt-notebook",
+  "upstream": "https://github.com/daogu-ai/chatgpt-viewer",
+  "license": "MIT with retained upstream and third-party notices",
+  "storageProtocols": [
+    141,
+    143
+  ]
+}

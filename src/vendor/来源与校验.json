@@ -1,0 +1,12 @@
+{
+  "katex": {
+    "version": "0.19.1",
+    "tarball": "https://registry.npmjs.org/katex/-/katex-0.19.1.tgz",
+    "integrity": "sha512-jG8uKntjSEcm2EpQOh0XturpPuuC9r3Sq5HLHdsFdWZT27E672SF19QEi+of0/YeOy15lDgRhKvr5614uRrEfA=="
+  },
+  "@toast-ui/editor": {
+    "version": "3.2.2",
+    "tarball": "https://registry.npmjs.org/@toast-ui/editor/-/editor-3.2.2.tgz",
+    "integrity": "sha512-ASX7LFjN2ZYQJrwmkUajPs7DRr9FsM1+RQ82CfTO0Y5ZXorBk1VZS4C2Dpxinx9kl55V4F8/A2h2QF4QMDtRbA=="
+  }
+}
