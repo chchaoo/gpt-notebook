@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-viewer-local'; style-src 'unsafe-inline'; font-src data:; img-src blob: data:; media-src blob: data:; worker-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="referrer" content="no-referrer"><title>GPT Notebook · v1.1</title>
+<meta name="referrer" content="no-referrer"><title>GPT Notebook · v1.1.1</title>
 <style>
   :root {
     --bg-main: #212121;
@@ -2932,7 +2932,7 @@ table.ProseMirror-selectednode {
  <button id="sidebar-shade" class="sidebar-shade" aria-label="关闭会话列表"></button>
  <aside id="conversation-sidebar" class="sidebar ui-chrome" aria-label="会话列表">
   <div class="sb-top"><div class="sb-logo-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="15" height="18" rx="3"/><path d="M9 3v18M3 7h4M3 12h4M3 17h4M12 8h5M12 12h5M12 16h3"/></svg>
-</div><strong class="sb-logo-text">GPT Notebook · v1.1</strong><button id="sidebar-close" class="icon-button sidebar-toggle" aria-label="收起侧栏" title="收起侧栏" aria-controls="conversation-sidebar" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>
+</div><strong class="sb-logo-text">GPT Notebook · v1.1.1</strong><button id="sidebar-close" class="icon-button sidebar-toggle" aria-label="收起侧栏" title="收起侧栏" aria-controls="conversation-sidebar" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>
   <div class="sb-search"><input id="search" type="search" placeholder="搜索会话" aria-label="搜索会话"><div class="search-control-row"><label class="search-option" title="同时搜索正文与其他分支"><input type="checkbox" id="search-body"><span>同时搜索正文与其他分支</span></label>
    <details class="search-advanced"><summary>搜索选项</summary><div class="search-options-panel"><label>匹配方式<select id="search-mode"><option value="literal">普通文字</option><option value="wildcard">通配符</option><option value="regex">正则表达式</option></select></label><label><input type="checkbox" id="search-case">区分大小写</label><label><input type="checkbox" id="search-whole">完整词匹配</label><label><input type="checkbox" id="search-accents">忽略重音符号</label><small>通配符：* 任意长度，? 一个字符。正则使用 RE2 语法。</small></div></details></div>
   </div>
@@ -3003,7 +3003,7 @@ table.ProseMirror-selectednode {
 <dialog id="editor" aria-labelledby="editor-title"><h2 id="editor-title">编辑消息</h2><p class="muted">暂存后可以继续编辑和撤销；保存才会写入源目录或源 ZIP。</p><div id="edit-fields"></div><div class="editor-actions"><button id="cancel-edit">取消本次编辑</button><button id="save-edit">暂存修改</button></div></dialog>
 <dialog id="import-dialog" aria-labelledby="import-title"><h2 id="import-title">增量导入</h2><p>将另一份资料中的聊天和相关附件加入当前草稿。</p><div class="editor-actions"><button id="import-cancel">取消</button><button id="import-directory">打开目录…</button><button id="import-zip">打开 ZIP…</button></div></dialog>
 <input id="import-folder-input" type="file" webkitdirectory multiple hidden><input id="import-zip-input" type="file" accept=".zip,application/zip" hidden>
-<dialog id="export-dialog" aria-labelledby="export-title"><h2 id="export-title">导出为…</h2><p id="export-scope" class="muted"></p><label class="export-field">内容范围<select id="export-range"><option value="current">当前聊天</option><option value="selected">所选聊天</option><option value="all">全部聊天</option></select></label><label class="export-field">格式<select id="export-format"><option value="html">独立 HTML（带媒体）</option><option value="markdown">Markdown + 媒体 ZIP</option><option value="obsidian">Obsidian 知识库 ZIP</option><option value="json">原始结构 JSON + 媒体 ZIP</option><option value="pdf">PDF（通过打印窗口另存）</option><option value="print">打印</option><option value="directory">资料文件夹（保留数据结构）</option><option value="zip">资料 ZIP（保留数据结构）</option></select></label><label class="export-field" id="export-layout-label">文件组织<select id="export-layout"><option value="combined">合并为一个文件</option><option value="separate">每条聊天分别一个文件</option></select></label><label class="export-field" id="export-name-label">文件名<input id="export-name" value="聊天记录"></label><div id="markdown-options"><label><input type="checkbox" id="export-all-branches">Markdown 包含全部分支</label><label><input type="checkbox" id="export-thoughts">Markdown 包含思考记录</label><label><input type="checkbox" id="export-tools">Markdown 包含工具 / 系统记录</label></div><p class="muted" id="export-hint">使用当前草稿，即使还没保存。分别导出时按聊天标题命名。</p><div class="editor-actions"><button id="export-cancel">取消</button><button id="export-start">开始导出</button></div></dialog>
+<dialog id="export-dialog" aria-labelledby="export-title"><h2 id="export-title">导出为…</h2><p id="export-scope" class="muted"></p><label class="export-field">内容范围<select id="export-range"><option value="current">当前聊天</option><option value="selected">所选聊天</option><option value="all">全部聊天</option></select></label><label class="export-field">格式<select id="export-format"><option value="html">独立 HTML（带媒体）</option><option value="markdown">Markdown + 媒体 ZIP</option><option value="obsidian">Obsidian 知识库 ZIP</option><option value="json">原始结构 JSON + 媒体 ZIP</option><option value="pdf">PDF（通过打印窗口另存）</option><option value="print">打印</option><option value="directory">资料文件夹（保留数据结构）</option><option value="zip">资料 ZIP（保留数据结构）</option></select></label><label class="export-field" id="export-layout-label">文件组织<select id="export-layout"><option value="combined">合并为一个文件</option><option value="separate">每条聊天分别一个文件</option></select></label><label class="export-field" id="export-name-label"><span id="export-name-caption">文件名</span><input id="export-name" value="聊天记录"></label><div id="markdown-options"><label><input type="checkbox" id="export-all-branches">Markdown 包含全部分支</label><label><input type="checkbox" id="export-thoughts">Markdown 包含思考记录</label><label><input type="checkbox" id="export-tools">Markdown 包含工具 / 系统记录</label></div><p class="muted" id="export-hint">使用当前草稿，即使还没保存。分别导出时按聊天标题命名。</p><div class="editor-actions"><button id="export-cancel">取消</button><button id="export-start">开始导出</button></div></dialog>
 <dialog id="leave-dialog" aria-labelledby="leave-title"><h2 id="leave-title">是否保存当前修改？</h2><p>当前资料中有尚未保存的编辑内容。</p><div class="leave-actions"><button id="leave-save">保存后关闭</button><button id="leave-save-as-directory">另存为文件夹后关闭</button><button id="leave-save-as">另存为 ZIP 后关闭</button><button id="leave-discard">不保存</button><button id="leave-cancel">取消</button><button id="leave-confirm-download" hidden>下载完成，关闭资料</button></div><p id="leave-message" class="muted"></p></dialog>
 <dialog id="backup-dialog" aria-labelledby="backup-heading"><h2 id="backup-heading">增量备份管理</h2><p><span>历史按两次成功保存之间的净变化记录。</span> <span>恢复先进入草稿；保存后追加新版本，原有历史保留。</span> <span>关闭增量备份会在确认后删除全部历史文件并停止记录，直接写入资料；不会保存聊天草稿。</span> <span>删除内容属于增量，可用于恢复删除操作。</span></p><div class="backup-filters"><label>类别<select id="backup-category"><option value="all">全部</option><option value="edit">会话版本</option><option value="deleted">已删除会话</option><option value="order">会话顺序</option></select></label><label>早于天数<input id="backup-days" type="number" min="0" value="30"></label><button id="backup-clean-age">删除较早备份</button><button id="backup-clean-category">删除此类别</button><button id="backup-clean-all" class="danger">删除全部增量备份</button></div><p id="backup-summary"></p><div id="backup-list"></div><div class="editor-actions"><button id="backup-close">关闭</button></div></dialog>
 <dialog id="history-dialog"><h2>修改记录</h2><p id="history-source" class="muted"></p><h3 id="changes-heading">当前未保存的改动</h3><div id="changes-list"></div><h3>本次操作记录</h3><p class="muted">“已保存”表示操作状态已包含在最近保存的整体版本中，不是每一步分别生成文件。记录仅保留在本次打开期间。</p><div id="history-list"></div><div class="editor-actions"><button id="history-close">关闭</button></div></dialog><dialog id="print-dialog"><h2 id="print-heading">打印与 PDF</h2><label class="export-field">内容范围<select id="print-scope"><option value="current">当前聊天</option><option value="selected">所选聊天</option><option value="all">全部聊天</option></select></label><label class="export-field">纸张<select id="print-paper"><option value="A4">A4</option><option value="A3">A3</option><option value="Letter">Letter</option><option value="Legal">Legal</option><option value="custom">自定义</option></select></label><div id="custom-paper" hidden><label>宽度 mm<input id="paper-width" type="number" min="50" max="500" value="210"></label><label>高度 mm<input id="paper-height" type="number" min="50" max="500" value="297"></label></div><label class="export-field">方向<select id="print-orientation"><option value="portrait">纵向</option><option value="landscape">横向</option></select></label><label class="export-field">页边距 mm<input id="print-margin" type="number" min="0" max="40" value="18"></label><label class="export-field">文字大小 pt<input id="print-font" type="number" min="8" max="24" value="11"></label><label><input type="checkbox" id="print-thoughts">包含思考记录</label><label><input type="checkbox" id="print-tools">包含工具 / 系统记录</label><p class="muted">保留当前界面配色；预览若缺少气泡背景，请启用“背景图形”。纸张宽度会改变换行和分页。系统打印窗口提供分页预览。导出 PDF 时在目标打印机中选择“另存为 PDF”。文档附件只列名称，不打印附件内的所有页面。</p><div class="editor-actions"><button id="print-cancel">取消</button><button id="print-start">预览 / 打印</button></div></dialog>
@@ -3464,7 +3464,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const size=blob.size,step=4*1024*1024;onBytes(0);if(!size){await stream.write(blob);return}
     for(let offset=0;offset<size;offset+=step){const end=Math.min(size,offset+step);await stream.write(blob.slice(offset,end));onBytes(end)}
   }
-  async function write(handle,blob,progress=()=>{}){const stream=await handle.createWritable({mode:'exclusive'});try{await writeChunks(stream,blob,bytes=>progress('写入 ZIP',blob.size?bytes/blob.size*100:100));progress('提交文件',null);await stream.close()}catch(error){try{await stream.abort?.()}catch(_){}throw error}}
+  async function writeFile(handle,blob,onBytes,onCommit=()=>{}){
+    const stream=await handle.createWritable({mode:'exclusive'});
+    try{await writeChunks(stream,blob,onBytes);onCommit();await stream.close()}
+    catch(error){try{await stream.abort?.()}catch(_){}throw error}
+  }
+  function write(handle,blob,progress=()=>{}){
+    return writeFile(handle,blob,bytes=>progress('写入 ZIP',blob.size?bytes/blob.size*100:100),()=>progress('提交文件',null));
+  }
   async function bindDirectory(source,handle){
     const found=await directory(handle);
     for(const [path,hash]of source.baseline||[])if(found.source.baseline.get(path)!==hash)throw new Error('所选目录与打开时的数据不一致，已停止保存；请选择原目录或另存为');
@@ -3528,19 +3535,59 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     progress('整理文件',null);
     const cleanupFailures=!options.clearMetadata&&(options.clearBackupFolder||changes.some(e=>e.remove&&backupPath(e.path)))?await pruneEmptyBackupFolders(source.handle):[];progress('保存完成',100);return {source:{...source,baseline:hashes},backup:null,written:changes.length,cleanupFailures};
   }
-  async function exportDirectory(handle,entries){
+  function validateExportFolderName(name){
+    if(!name.trim()||name.length>255||/[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(name)||/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(name))
+      throw new Error('请输入有效的文件夹名称。');
+  }
+  async function exportDirectory(handle,entries,progress=()=>{}){
     await permission(handle);
     for await(const child of handle.values())throw new Error('导出文件夹必须为空，请选择或新建一个空目录');
     const seen=new Set();for(const entry of entries){if(!valid(entry.path)||seen.has(entry.path.toLowerCase()))throw new Error('导出路径无效或重复：'+entry.path);seen.add(entry.path.toLowerCase())}
-    const created=[];
+    const created=[],directories=new Map([['',handle]]),total=entries.reduce((sum,entry)=>sum+entry.blob.size,0);
+    let written=0,count=0;
+    const report=bytes=>progress('写入导出文件',total?(written+bytes)/total*100:count/entries.length*100);
     try{
-      for(const entry of entries){if(await maybeFile(handle,entry.path))throw new Error('目标目录中出现了同名文件，已停止导出');const target=await fileAt(handle,entry.path,true);created.push(target);await write(target.handle,entry.blob)}
+      progress('写入导出文件',0);
+      for(const entry of entries){
+        if(await maybeFile(handle,entry.path))throw new Error('目标目录中出现了同名文件，已停止导出');
+        const parts=entry.path.split('/'),name=parts.pop();let path='',parent=handle;
+        for(const part of parts){
+          path+=(path?'/':'')+part;
+          if(!directories.has(path)){
+            let dir;
+            try{dir=await parent.getDirectoryHandle(part)}
+            catch(error){
+              if(error.name!=='NotFoundError')throw error;
+              dir=await parent.getDirectoryHandle(part,{create:true});created.push({parent,name:part});
+            }
+            directories.set(path,dir);
+          }
+          parent=directories.get(path);
+        }
+        const file=await parent.getFileHandle(name,{create:true});created.push({parent,name});
+        await writeFile(file,entry.blob,report);written+=entry.blob.size;count++;
+      }
+      progress('写入导出文件',100);
     }catch(error){
       let incomplete=false;for(const item of created.reverse())try{await item.parent.removeEntry(item.name)}catch(_){incomplete=true}
       throw new Error('文件夹导出失败；'+(incomplete?'部分输出未能清理，请检查目标目录。':'已清理本次创建的文件。')+error.message);
     }
   }
-  return {hidden,valid,backupFiles,pruneEmptyBackupFolders,digest,baseline,directory,readonly,inspectZip,zip,permission,bindDirectory,bindZip,zipBlob,saveZip,saveDirectory,write,exportDirectory};
+  async function exportSubdirectory(parent,name,entries,progress){
+    validateExportFolderName(name);
+    await permission(parent);
+    const key=name.normalize('NFC').toLowerCase();
+    for await(const child of parent.values())if(child.name.normalize('NFC').toLowerCase()===key)throw new Error('目标位置已有同名项目，请更换文件夹名称。');
+    const folder=await parent.getDirectoryHandle(name,{create:true});
+    try{await exportDirectory(folder,entries,progress)}
+    catch(error){
+      // Remove the new folder only if empty. Leave any unrelated additions intact.
+      try{await parent.removeEntry(name)}
+      catch(_){throw new Error('未能清理导出文件夹，请检查目标位置。'+error.message)}
+      throw error;
+    }
+  }
+  return {hidden,valid,backupFiles,pruneEmptyBackupFolders,digest,baseline,directory,readonly,inspectZip,zip,permission,bindDirectory,bindZip,zipBlob,saveZip,saveDirectory,write,exportDirectory,exportSubdirectory,validateExportFolderName};
 });
 </script><script nonce="viewer-local">/*!
 * re2js
@@ -10419,6 +10466,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   // Catalog rows retain the source text so switching languages never translates
   // user messages or chains translations through another language.
   const rows=[
+    ["文件夹名称", "Folder name", "資料夾名稱", "フォルダー名", "폴더 이름", "Nom du dossier", "Ordnername", "Nombre de carpeta", "Nome da pasta", "Имя папки", "اسم المجلد"],
+    ["输入文件夹名称，再选择存放位置。程序会新建子文件夹并导出聊天和附件。", "Enter a folder name, then choose its location. Chats and attachments will be exported into the new subfolder.", "輸入資料夾名稱，再選擇存放位置。程式會建立子資料夾並匯出對話及附件。", "フォルダー名を入力して保存先を選択してください。新しいサブフォルダーにチャットと添付ファイルをエクスポートします。", "폴더 이름을 입력한 뒤 저장 위치를 선택하세요. 새 하위 폴더에 대화와 첨부 파일을 내보냅니다.", "Saisissez un nom et choisissez un emplacement. Les conversations et pièces jointes seront exportées dans un nouveau sous-dossier.", "Ordnernamen eingeben und Speicherort auswählen. Chats und Anhänge werden in den neuen Unterordner exportiert.", "Escribe un nombre y elige una ubicación. Los chats y archivos se exportarán a la nueva subcarpeta.", "Digite um nome e escolha o local. As conversas e os anexos serão exportados para a nova subpasta.", "Введите имя папки и выберите место. Чаты и вложения будут экспортированы в новую подпапку.", "أدخل اسم المجلد ثم اختر موقعه. ستُصدّر المحادثات والمرفقات إلى مجلد فرعي جديد."],
+    ["请输入有效的文件夹名称。", "Enter a valid folder name.", "請輸入有效的資料夾名稱。", "有効なフォルダー名を入力してください。", "유효한 폴더 이름을 입력하세요.", "Saisissez un nom de dossier valide.", "Geben Sie einen gültigen Ordnernamen ein.", "Introduce un nombre de carpeta válido.", "Digite um nome de pasta válido.", "Введите допустимое имя папки.", "أدخل اسم مجلد صالحًا."],
+    ["目标位置已有同名项目，请更换文件夹名称。", "An item with that name already exists. Choose a different folder name.", "目標位置已有同名項目，請更換資料夾名稱。", "同じ名前の項目が既にあります。別のフォルダー名を選んでください。", "같은 이름의 항목이 있습니다. 다른 폴더 이름을 선택하세요.", "Un élément porte déjà ce nom. Choisissez un autre nom de dossier.", "Ein Element mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Ordnernamen.", "Ya existe un elemento con ese nombre. Elige otro nombre de carpeta.", "Já existe um item com esse nome. Escolha outro nome para a pasta.", "Объект с таким именем уже существует. Выберите другое имя папки.", "يوجد عنصر بهذا الاسم بالفعل. اختر اسمًا آخر للمجلد."],
+    ["等待选择导出位置", "Waiting for export location", "等待選擇匯出位置", "エクスポート先の選択を待機中", "내보내기 위치 선택 대기 중", "En attente du choix de l’emplacement", "Warten auf den Exportpfad", "Esperando la ubicación de exportación", "A aguardar o local de exportação", "Ожидание выбора места экспорта", "بانتظار اختيار موقع التصدير"],
+    ["准备导出", "Preparing export", "準備匯出", "エクスポートの準備中", "내보내기 준비 중", "Préparation de l’exportation", "Export wird vorbereitet", "Preparando exportación", "A preparar exportação", "Подготовка экспорта", "جارٍ تجهيز التصدير"],
+    ["整理导出附件", "Preparing attachments", "整理匯出附件", "添付ファイルの準備中", "첨부 파일 준비 중", "Préparation des pièces jointes", "Anhänge werden vorbereitet", "Preparando archivos adjuntos", "A preparar anexos", "Подготовка вложений", "جارٍ تجهيز المرفقات"],
+    ["生成导出内容", "Generating export content", "產生匯出內容", "エクスポート内容を生成中", "내보낼 내용 생성 중", "Génération du contenu à exporter", "Exportinhalt wird erstellt", "Generando contenido de exportación", "A gerar conteúdo para exportação", "Создание содержимого для экспорта", "جارٍ إنشاء محتوى التصدير"],
+    ["打包导出文件", "Packaging export files", "封裝匯出檔案", "エクスポートファイルをまとめています", "내보낼 파일 압축 중", "Préparation de l’archive", "Exportdateien werden gepackt", "Empaquetando archivos de exportación", "A empacotar ficheiros de exportação", "Упаковка экспортируемых файлов", "جارٍ تجميع ملفات التصدير"],
+    ["写入导出文件", "Writing export files", "寫入匯出檔案", "エクスポートファイルを書き込み中", "내보낼 파일 쓰는 중", "Écriture des fichiers exportés", "Exportdateien werden geschrieben", "Escribiendo archivos de exportación", "A escrever ficheiros de exportação", "Запись экспортируемых файлов", "جارٍ كتابة ملفات التصدير"],
+    ["准备打印", "Preparing to print", "準備列印", "印刷の準備中", "인쇄 준비 중", "Préparation de l’impression", "Druck wird vorbereitet", "Preparando impresión", "A preparar impressão", "Подготовка к печати", "جارٍ تجهيز الطباعة"],
+    ["生成打印内容", "Generating print content", "產生列印內容", "印刷内容を生成中", "인쇄할 내용 생성 중", "Génération du contenu à imprimer", "Druckinhalt wird erstellt", "Generando contenido de impresión", "A gerar conteúdo de impressão", "Создание содержимого для печати", "جارٍ إنشاء محتوى الطباعة"],
+    ["加载打印字体和图片", "Loading print fonts and images", "載入列印字型與圖片", "印刷用のフォントと画像を読み込み中", "인쇄 글꼴과 이미지 불러오는 중", "Chargement des polices et images", "Schriftarten und Bilder werden geladen", "Cargando fuentes e imágenes", "A carregar fontes e imagens", "Загрузка шрифтов и изображений", "جارٍ تحميل خطوط وصور الطباعة"],
+    ["打开系统打印窗口", "Opening the system print dialog", "開啟系統列印視窗", "システムの印刷ダイアログを開いています", "시스템 인쇄 창 여는 중", "Ouverture de la fenêtre d’impression", "Systemdruckdialog wird geöffnet", "Abriendo el diálogo de impresión", "A abrir a janela de impressão", "Открытие системного окна печати", "جارٍ فتح نافذة الطباعة"],
     ["编辑模式", "Edit mode", "編輯模式", "編集モード", "편집 모드", "Mode édition", "Bearbeitungsmodus", "Modo de edición", "Modo de edição", "Режим редактирования", "وضع التحرير"],
     ["若要进行操作，请打开编辑模式", "Turn on Edit mode to use this action", "若要進行操作，請開啟編輯模式", "操作するには編集モードをオンにしてください", "이 작업을 하려면 편집 모드를 켜세요", "Activez le mode édition pour utiliser cette action", "Aktivieren Sie den Bearbeitungsmodus für diese Aktion", "Activa el modo de edición para usar esta acción", "Ative o modo de edição para usar esta ação", "Включите режим редактирования для этого действия", "فعّل وضع التحرير لاستخدام هذا الإجراء"],
     ["星标当前会话", "Star current chat", "星標目前對話", "現在のチャットにスター", "현재 대화에 별표", "Favori de la conversation actuelle", "Aktuellen Chat markieren", "Marcar chat actual", "Marcar conversa atual", "Отметить текущий чат", "وضع نجمة للمحادثة الحالية"],
@@ -11584,17 +11645,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     "В этом сеансе ещё не было правок.",
     "لم تُجرَ تعديلات في هذه الجلسة."
   ],
-  "仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。文件夹请选择空目录。": [
-    "Export only the chosen conversations and related media. The copy can be reopened. Save location and unsaved state stay unchanged. Choose an empty folder.",
-    "僅匯出指定會話結構及相關媒體，可重新開啟；不切換儲存位置或清除未儲存狀態。請選空資料夾。",
-    "指定範囲の会話構造と関連メディアだけを出力し、再度開けます。保存先と未保存状態は変えません。空のフォルダーを選んでください。",
-    "선택한 대화 구조와 관련 미디어만 내보내며 다시 열 수 있습니다. 저장 위치와 미저장 상태는 유지됩니다. 빈 폴더를 선택하세요.",
-    "Exporte seulement les conversations choisies et leurs médias. La copie peut être rouverte, sans changer le lieu de sauvegarde ni l’état non enregistré. Choisissez un dossier vide.",
-    "Exportiert nur die gewählten Chats samt Medien, erneut öffnbar. Speicherort und ungespeicherter Status bleiben erhalten. Leeren Ordner wählen.",
-    "Exporta solo las conversaciones elegidas y sus medios. La copia puede reabrirse sin cambiar el destino ni el estado sin guardar. Elija una carpeta vacía.",
-    "Exporta apenas as conversas escolhidas e os seus meios. A cópia pode ser reaberta, sem mudar o local nem o estado por guardar. Escolha uma pasta vazia.",
-    "Экспортирует только выбранные чаты и медиа с возможностью повторного открытия. Место сохранения и статус изменений не меняются. Выберите пустую папку.",
-    "يُصدّر المحادثات المحددة ووسائطها فقط ويمكن فتح النسخة مجددًا، دون تغيير موقع الحفظ أو حالة التعديلات. اختر مجلدًا فارغًا."
+  "仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。": [
+    "Export only the chosen conversations and related media. The copy can be reopened. Save location and unsaved state stay unchanged.",
+    "僅匯出指定會話結構及相關媒體，可重新開啟；不切換儲存位置或清除未儲存狀態。",
+    "指定範囲の会話構造と関連メディアだけを出力し、再度開けます。保存先と未保存状態は変えません。",
+    "선택한 대화 구조와 관련 미디어만 내보내며 다시 열 수 있습니다. 저장 위치와 미저장 상태는 유지됩니다.",
+    "Exporte seulement les conversations choisies et leurs médias. La copie peut être rouverte, sans changer le lieu de sauvegarde ni l’état non enregistré.",
+    "Exportiert nur die gewählten Chats samt Medien, erneut öffnbar. Speicherort und ungespeicherter Status bleiben erhalten.",
+    "Exporta solo las conversaciones elegidas y sus medios. La copia puede reabrirse sin cambiar el destino ni el estado sin guardar.",
+    "Exporta apenas as conversas escolhidas e os seus meios. A cópia pode ser reaberta, sem mudar o local nem o estado por guardar.",
+    "Экспортирует только выбранные чаты и медиа с возможностью повторного открытия. Место сохранения и статус изменений не меняются.",
+    "يُصدّر المحادثات المحددة ووسائطها فقط ويمكن فتح النسخة مجددًا، دون تغيير موقع الحفظ أو حالة التعديلات."
   ]
 };
   Object.assign(localizedExplanations,{
@@ -14694,12 +14755,14 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
     return base64(new Blob([JSON.stringify(settings)])).then(base64=>archive.push({path:'.viewer-state/viewer-settings.json',mime:'application/json',base64}));
   }
   async function payload(records,resources,options={}){
-    const raw=selectedJSON(records),archive=[],names={},seen=new Set();
-    for(const [id,entry]of resources){
-      if(!raw.includes(id)||seen.has(entry.path))continue;seen.add(entry.path);
+    const raw=selectedJSON(records),archive=[],names={},seen=new Set(),assets=[...resources].filter(([id])=>raw.includes(id));let done=0;
+    for(const [,entry]of assets){
+      await options.onMedia?.(done++,assets.length);
+      if(seen.has(entry.path))continue;seen.add(entry.path);
       archive.push({path:entry.path,mime:entry.mime||entry.blob.type||'application/octet-stream',base64:await base64(entry.blob)});
       if(entry.name)names[entry.path.split('/').pop()]=entry.name;
     }
+    if(assets.length)await options.onMedia?.(assets.length,assets.length);
     archive.push({path:'conversation_asset_file_names.json',mime:'application/json',base64:await base64(new Blob([JSON.stringify(names)]))});
     if(options.editMode)await addSettings(archive,exportSettings(records,(r,index)=>({id:r.id||r.raw.id||'',path:'conversations.json',index}),options));
     return {version:2,sources:[{path:'conversations.json',text:raw}],archive};
@@ -14777,7 +14840,7 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
     const binary=atob(match[2]),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));return new Blob([bytes],{type:match[1]});
   }
   async function markdown(records,resources,options={}){
-    const media=[],documents=[],usedTitles=new Set(options.obsidian?[vaultIndex.toLowerCase()]:[]);
+    const media=[],documents=[],usedTitles=new Set(options.obsidian?[vaultIndex.toLowerCase()]:[]);let finished=0;
     for(const r of records){
       const name=unique(options.obsidian?obsidianName(r.raw.title):filename(r.raw.title),usedTitles),sections=['# '+(r.raw.title||'未命名聊天')],assetNames=new Set(),assetPaths=new Map();
       async function include(id,blob,suggested,mime){
@@ -14794,7 +14857,10 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
         for(const [start,end,text]of substitutions.reverse())value=value.slice(0,start)+text+value.slice(end);
         return value;
       }
-      for(const id of C.branch(r.raw,options.allBranches?'__all__':options.branches?.get(r.key)).ids){
+      const ids=C.branch(r.raw,options.allBranches?'__all__':options.branches?.get(r.key)).ids;
+      let messageIndex=0;
+      for(const id of ids){
+        await options.onProgress?.(finished+messageIndex++/ids.length,records.length);
         const message=C.nodeMap(r.raw)[id]?.message;if(!C.object(message))continue;
         const info=C.classification(message);if(info.thought&&!options.thoughts||info.tool&&!options.tools)continue;
         sections.push('## '+(( {user:'用户',assistant:'助手',tool:'工具',system:'系统',developer:'系统'})[info.role]||info.role));
@@ -14812,6 +14878,7 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
         }
       }
       documents.push({name,title:r.raw.title||name,text:sections.join('\n\n')+'\n'});
+      await options.onProgress?.(++finished,records.length);
     }
     const entries=options.combined?[{path:filename(options.name||'聊天记录')+'.md',blob:new Blob([documents.map(d=>d.text).join('\n\n---\n\n')],{type:'text/markdown'})}]:documents.map(d=>({path:d.name+'.md',blob:new Blob([d.text],{type:'text/markdown'})}));
     if(options.obsidian){
@@ -14948,9 +15015,13 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
     for(const [name,value]of Object.entries(environment.palette||{}))if(/^--[a-z-]+$/.test(name)&&value)container.style.setProperty(name,value);
     if(environment.fontFamily)container.style.setProperty('--print-family',environment.fontFamily);
     const text=(tag,value)=>{const e=doc.createElement(tag);e.textContent=value;return e};
+    let finished=0;
     for(const record of records){
       const section=doc.createElement('section');section.className='print-chat';const heading=text('h1',record.raw.title||'ChatGPT');heading.className='print-title';section.append(heading);
-      for(const id of C.branch(record.raw,branches?.get(record.key)).ids){
+      const ids=C.branch(record.raw,branches?.get(record.key)).ids;
+      let messageIndex=0;
+      for(const id of ids){
+        await environment.onProgress?.(finished+messageIndex++/ids.length,records.length);
         const message=C.nodeMap(record.raw)[id]?.message;if(!C.object(message))continue;
         const info=C.classification(message);if(info.thought&&!options.thoughts||info.tool&&!options.tools)continue;
         const article=doc.createElement('article');article.className='print-message msg '+info.role;const role=info.thought?'思考记录':({user:'用户',assistant:'助手',tool:'工具',system:'系统'})[info.role]||info.role;
@@ -14968,6 +15039,7 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
         const panel=doc.createElement('div');panel.className='message-panel';const body=doc.createElement('div');body.className='msg-content';for(const child of [...article.childNodes])if(child!==header)body.append(child);panel.append(header,body);article.replaceChildren(panel);section.append(article);
       }
       container.append(section);
+      await environment.onProgress?.(++finished,records.length);
     }
     return {element:container,style:css(options),options};
   }
@@ -16645,55 +16717,84 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
     flushEditor();closeMenus();state.exportKeys=(keys===undefined?[...state.selected]:keys).filter(key=>!state.deleted.has(key));
     $('export-format').value=format;
     $('export-range').value=state.exportKeys.length?'selected':current()?'current':'all';
-    const rows=exportRecords();state.exportAutoName=rows.length===1?title(rows[0]):'聊天记录';$('export-name').value=state.exportAutoName;
+    const rows=exportRecords();state.exportAutoName=E.filename(rows.length===1?title(rows[0]):'聊天记录');$('export-name').value=state.exportAutoName;
     updateExportOptions();$('export-dialog').showModal();
+  }
+  function exportProgress(){
+    let lastYield=Date.now();
+    return async(stage,done,total)=>{
+      zipProgress(stage,total?done/total*100:null);
+      if(Date.now()-lastYield>=35){
+        await yieldUI();lastYield=Date.now();
+      }
+    };
   }
   function updateExportOptions(){
     const format=$('export-format').value,paged=format==='pdf'||format==='print',obsidian=format==='obsidian',bundle=format==='directory'||format==='zip',rows=exportRecords();
-    const name=rows.length===1?title(rows[0]):'聊天记录';if($('export-name').value===state.exportAutoName)$('export-name').value=name;state.exportAutoName=name;
+    const name=E.filename(rows.length===1?title(rows[0]):'聊天记录');if($('export-name').value===state.exportAutoName)$('export-name').value=name;state.exportAutoName=name;
     $('export-scope').textContent='准备导出 '+rows.length+' 段聊天，包含当前未保存的编辑内容。';
     $('markdown-options').hidden=format!=='markdown'&&!obsidian;$('export-layout-label').hidden=paged||bundle||obsidian;
-    $('export-name-label').hidden=paged||format==='directory'||!obsidian&&!bundle&&$('export-layout').value==='separate';
+    $('export-name-label').hidden=paged||!obsidian&&!bundle&&$('export-layout').value==='separate';
+    I.setText($('export-name-caption'),format==='directory'?'文件夹名称':'文件名');
     $('export-start').textContent=paged?'继续到页面设置':'开始导出';$('export-start').disabled=!rows.length||state.busy;
-    I.setText($('export-hint'),obsidian?'解压 ZIP，在 Obsidian 中将解压目录作为知识库打开，然后打开聊天索引。':bundle?'仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。文件夹请选择空目录。':paged?'沿用浏览器分页和打印功能；PDF 请在打印窗口选择“另存为 PDF”。':'使用当前草稿，即使还没保存。分别导出时按聊天标题命名。');
+    I.setText($('export-hint'),obsidian?'解压 ZIP，在 Obsidian 中将解压目录作为知识库打开，然后打开聊天索引。':format==='directory'?'输入文件夹名称，再选择存放位置。程序会新建子文件夹并导出聊天和附件。':bundle?'仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。':paged?'沿用浏览器分页和打印功能；PDF 请在打印窗口选择“另存为 PDF”。':'使用当前草稿，即使还没保存。分别导出时按聊天标题命名。');
   }
   async function exportSelection(){
     flushEditor();if(state.busy)return;
     const records=exportRecords();if(!records.length)return;
     if(['pdf','print'].includes($('export-format').value)){const pdf=$('export-format').value==='pdf',scope=$('export-range').value,keys=[...state.exportKeys];$('export-dialog').close();openPrint(pdf,keys,scope);return}
-    const format=$('export-format').value,combined=$('export-layout').value==='combined',name=E.filename($('export-name').value||'聊天记录');
-    const exportSettings={editMode:state.editMode&&(state.savedMode||state.orderModified||state.stars.size>0||state.deleted.size>0||state.docs.some(doc=>doc.changes.size)||effectiveDocuments().some(doc=>state.importDocs.has(doc.path))||state.structuralRevision>0),starred:new Set(state.stars)};
-    setBusy(true);$('export-start').disabled=true;
+    const format=$('export-format').value,combined=$('export-layout').value==='combined',requestedName=$('export-name').value;
+    const name=format==='directory'?requestedName:E.filename(requestedName||'聊天记录');
+    const report=exportProgress(),onMedia=(done,total)=>report('整理导出附件',done,total);
+    const exportSettings={editMode:state.editMode&&(state.savedMode||state.orderModified||state.stars.size>0||state.deleted.size>0||state.docs.some(doc=>doc.changes.size)||effectiveDocuments().some(doc=>state.importDocs.has(doc.path))||state.structuralRevision>0),starred:new Set(state.stars),onMedia};
+    const pack=async entries=>{
+      zipProgress('打包导出文件',0);await yieldUI();
+      return C.zip(entries,(n,t)=>zipProgress('打包导出文件',n/t*100));
+    };
+    setBusy(true);$('export-start').disabled=$('export-cancel').disabled=true;
     try{
+      let handle;
+      if(format==='directory'){
+        IO.validateExportFolderName(name);
+        if(typeof window.showDirectoryPicker!=='function')throw new Error('当前浏览器不支持写入目录，请使用 Chrome/Edge，或导出为 ZIP');
+        zipProgress('等待选择导出位置');
+        handle=await window.showDirectoryPicker({mode:'readwrite'});
+      }else if(format==='zip'&&typeof window.showSaveFilePicker==='function'){
+        zipProgress('等待选择导出位置');
+        handle=await window.showSaveFilePicker({suggestedName:name+'.zip',types:[{description:'ChatGPT ZIP',accept:{'application/zip':['.zip']}}]});
+        if(state.source?.handle?.isSameEntry&&await state.source.handle.isSameEntry(handle))throw new Error('导出请选择新的 ZIP；覆盖源 ZIP 请使用保存');
+        if(state.source?.kind==='zip'&&!state.source.handle&&await IO.digest(await handle.getFile())===state.source.zipDigest)throw new Error('导出目标与打开的 ZIP 内容相同，请选择新的 ZIP');
+      }
+      zipProgress('准备导出');await yieldUI();
       if(format==='directory'||format==='zip'){
-        let handle;
-        if(format==='directory'){
-          if(typeof window.showDirectoryPicker!=='function')throw new Error('当前浏览器不支持写入目录，请使用 Chrome/Edge，或导出为 ZIP');
-          handle=await window.showDirectoryPicker({mode:'readwrite'});
-        }else if(typeof window.showSaveFilePicker==='function'){
-          handle=await window.showSaveFilePicker({suggestedName:name+'.zip',types:[{description:'ChatGPT ZIP',accept:{'application/zip':['.zip']}}]});
-          if(state.source?.handle?.isSameEntry&&await state.source.handle.isSameEntry(handle))throw new Error('导出请选择新的 ZIP；覆盖源 ZIP 请使用保存');
-          if(state.source?.kind==='zip'&&!state.source.handle&&await IO.digest(await handle.getFile())===state.source.zipDigest)throw new Error('导出目标与打开的 ZIP 内容相同，请选择新的 ZIP');
-        }
-        if(format==='zip')zipProgress('整理文件',null);const entries=await E.bundle(records,state.resources,exportShell,exportSettings);
-        if(format==='directory')await IO.exportDirectory(handle,entries);
-        else{const blob=await IO.zipBlob(null,entries,zipProgress);if(handle){await IO.permission(handle);zipProgress('写入 ZIP',null);await IO.write(handle,blob,zipProgress)}else download(blob,name+'.zip')}
+        const entries=await E.bundle(records,state.resources,exportShell,exportSettings);
+        if(format==='directory')await IO.exportSubdirectory(handle,name,entries,zipProgress);
+        else{const blob=await IO.zipBlob(null,entries,zipProgress);if(handle){await IO.permission(handle);await IO.write(handle,blob,zipProgress)}else download(blob,name+'.zip')}
       }else if(format==='markdown'||format==='obsidian'){
-        const obsidian=format==='obsidian',entries=await E.markdown(records,state.resources,{obsidian,combined:combined&&!obsidian,name,branches:state.branches,allBranches:$('export-all-branches').checked,thoughts:$('export-thoughts').checked,tools:$('export-tools').checked,resolveResource:resourceBlob});
-        download(await C.zip(entries,(n,t)=>notify('正在打包 Markdown 与媒体：'+n+' / '+t)),name+(obsidian?'-Obsidian.zip':'-Markdown.zip'));
-      }else if(format==='html'){
-        if(combined){const payload=await E.payload(records,state.resources,exportSettings);download(new Blob([E.html(exportShell,payload)],{type:'text/html'}),name+'.html')}
-        else{const used=new Set(),entries=[];for(const r of records){notify('正在生成独立 HTML：'+title(r));const payload=await E.payload([r],state.resources,exportSettings);entries.push({path:E.unique(E.filename(title(r)),used)+'.html',blob:new Blob([E.html(exportShell,payload)],{type:'text/html'})});await yieldUI()}download(await C.zip(entries),name+'-HTML.zip')}
+        const obsidian=format==='obsidian',entries=await E.markdown(records,state.resources,{obsidian,combined:combined&&!obsidian,name,branches:state.branches,allBranches:$('export-all-branches').checked,thoughts:$('export-thoughts').checked,tools:$('export-tools').checked,resolveResource:resourceBlob,onProgress:(done,total)=>report('生成导出内容',done,total)});
+        download(await pack(entries),name+(obsidian?'-Obsidian.zip':'-Markdown.zip'));
       }else{
         const groups=combined?[records]:records.map(r=>[r]),entries=[],used=new Set();
-        for(const group of groups){const payload=await E.payload(group,state.resources,exportSettings),folder=combined?'':E.unique(E.filename(title(group[0])),used)+'/';
-          entries.push({path:folder+'conversations.json',blob:new Blob([payload.sources[0].text],{type:'application/json'})});
-          for(const item of payload.archive){const binary=atob(item.base64),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));entries.push({path:folder+item.path,blob:new Blob([bytes],{type:item.mime})})}
+        let done=0;
+        for(const group of groups){
+          await report('生成导出内容',done,groups.length);
+          const payload=await E.payload(group,state.resources,exportSettings);
+          if(format==='html'){
+            const blob=new Blob([E.html(exportShell,payload)],{type:'text/html'});
+            if(combined)download(blob,name+'.html');
+            else entries.push({path:E.unique(E.filename(title(group[0])),used)+'.html',blob});
+          }else{
+            const folder=combined?'':E.unique(E.filename(title(group[0])),used)+'/';
+            entries.push({path:folder+'conversations.json',blob:new Blob([payload.sources[0].text],{type:'application/json'})});
+            for(const item of payload.archive){const binary=atob(item.base64),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));entries.push({path:folder+item.path,blob:new Blob([bytes],{type:item.mime})})}
+          }
+          done++;
         }
-        download(await C.zip(entries),name+I.t('-原始结构.zip'));
+        if(entries.length)download(await pack(entries),format==='html'?name+'-HTML.zip':name+I.t('-原始结构.zip'));
       }
-      $('export-dialog').close();notify('导出完成，使用的是当前草稿；不会覆盖原始导出目录。');
-    }catch(error){if(error.name!=='AbortError')notify('导出失败：'+error.message,true)}finally{setBusy(false);$('export-start').disabled=false}
+      $('export-dialog').close();zipProgress('导出完成',100);notify('导出完成，使用的是当前草稿；不会覆盖原始导出目录。');
+    }catch(error){if(error.name!=='AbortError')notify('导出失败：'+error.message,true)}
+    finally{setBusy(false);$('export-cancel').disabled=false;updateExportOptions()}
   }
   function closeWorkspace(force=false){if(state.busy&&!force)return;state.loadToken++;reset();state.savedSign=signature();$('app').hidden=true;$('loader').hidden=false;notify('资料已关闭，可以重新选择目录');updateChanges()}
   function requestClose(){
@@ -16880,15 +16981,17 @@ _editorCore__WEBPACK_IMPORTED_MODULE_0___default().setLanguage('zh-TW', {
     const scope=$('print-scope').value,records=orderedRecords().filter(r=>scope==='all'||scope==='current'&&r.key===state.current||scope==='selected'&&(state.printKeys?state.printKeys.includes(r.key):state.selected.has(r.key)));
     if(!records.length){notify('没有可打印的聊天，请检查选择范围',true);return}
     try{
-      setBusy(true);$('print-start').disabled=true;
-      const result=await Print.build(records,{paper:$('print-paper').value,width:$('paper-width').value,height:$('paper-height').value,orientation:$('print-orientation').value,margin:$('print-margin').value,font:$('print-font').value,thoughts:$('print-thoughts').checked,tools:$('print-tools').checked},{document,markdown,resources:state.resources,resolveResource:resourceBlob,branches:state.branches,translate:I.t,fontFamily:fonts[preferences.font]});
+      setBusy(true);$('print-start').disabled=$('print-cancel').disabled=true;
+      zipProgress('准备打印');await yieldUI();
+      const report=exportProgress(),result=await Print.build(records,{paper:$('print-paper').value,width:$('paper-width').value,height:$('paper-height').value,orientation:$('print-orientation').value,margin:$('print-margin').value,font:$('print-font').value,thoughts:$('print-thoughts').checked,tools:$('print-tools').checked},{document,markdown,resources:state.resources,resolveResource:resourceBlob,branches:state.branches,translate:I.t,fontFamily:fonts[preferences.font],onProgress:(done,total)=>report('生成打印内容',done,total)});
       document.getElementById('print-document')?.remove();document.getElementById('print-page-style')?.remove();
       const style=document.createElement('style');style.id='print-page-style';style.textContent=result.style;document.head.append(style);document.body.append(result.element);
-      await document.fonts?.ready;
+      zipProgress('加载打印字体和图片');await document.fonts?.ready;
       await Promise.all([...result.element.querySelectorAll('img')].map(image=>typeof image.decode==='function'?image.decode().catch(()=>{}):Promise.resolve()));
       state.printReady=true;$('print-dialog').close();const oldTitle=document.title;document.title=records.length===1?title(records[0]):'ChatGPT 聊天记录';
+      zipProgress('打开系统打印窗口');
       try{window.print()}finally{document.title=oldTitle}notify('已打开系统打印预览；导出 PDF 时请选择“另存为 PDF”');
-    }catch(error){notify('打印准备失败：'+error.message,true)}finally{setBusy(false);$('print-start').disabled=false}
+    }catch(error){notify('打印准备失败：'+error.message,true)}finally{setBusy(false);$('print-start').disabled=$('print-cancel').disabled=false}
   }
   $('quick-pdf').addEventListener('click',()=>openPrint(true));$('quick-print').addEventListener('click',()=>openPrint(false));
   $('print-cancel').addEventListener('click',()=>{if(!state.busy)$('print-dialog').close()});$('print-start').addEventListener('click',startPrint);
