@@ -21,10 +21,10 @@ test('ZIP saving emits compression progress, indeterminate writing, and completi
  const next=[{path:'conversations.json',blob:new Blob([raw.replace('original','saved')])}];await IO.saveZip(opened.source,next,opened.source.handle,false,(stage,percent)=>events.push([stage,percent]));
  assert.ok(events.some(([stage,p])=>stage==='压缩 ZIP'&&p>=0&&p<=100));assert.ok(events.some(([stage,p])=>stage==='写入 ZIP'&&p===null));assert.deepEqual(events.at(-1),['保存完成',100]);assert.ok((await IO.zip(target.files.get('a.zip'))).entries.length);
 });
-test('code controls are outside horizontally scrolling pre and scoped sticky styling does not alter print renderer',async()=>{
+test('code controls are outside horizontally scrolling pre and scoped sticky styling preserves expected print implementation',async()=>{
  const a=setup({editing:true});await load(a);const d=a.document,pre=d.querySelector('#msgs pre'),box=pre.parentElement;assert.equal(box.className,'code-block');assert.ok(box.querySelector('.code-tools .copy-code'));assert.equal(pre.querySelector('button'),null);
  const css=fs.readFileSync(path.join(__dirname,'../viewer_styles.css'),'utf8');assert.ok(css.includes('.chat-container .message-header{position:sticky'));assert.ok(css.includes('.chat-container .code-tools{position:sticky'));assert.ok(css.includes('select:focus,select:focus-visible{outline:none;box-shadow:none}'));
- assert.equal(require('crypto').createHash('sha256').update(Buffer.from(fs.readFileSync(path.join(__dirname,'../viewer_print.js'),'utf8').replace('markdown(block.text,message)','markdown(block.text)').replace(/\r\n/g,'\n'))).digest('hex'),'c069323895de499dfbe3962a49a1f6703d2b4d5f275e8d51bf32454c04ae3801');
+ assert.equal(require('crypto').createHash('sha256').update(Buffer.from(fs.readFileSync(path.join(__dirname,'../viewer_print.js'),'utf8').replace('markdown(block.text,message)','markdown(block.text)').replace(/\r\n/g,'\n'))).digest('hex'),'de955e30d22d736ec0f1760f2617c18e81e1cbb07b5944e4e118db57ab8d8547');
 });
 test('all supported locales have explicit extended interface translations; code buttons translate without changing content',async()=>{
  const a=setup({editing:true});await load(a);const I=a.ctx.ViewerI18n;

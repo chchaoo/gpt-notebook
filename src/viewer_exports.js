@@ -33,12 +33,14 @@
     return base64(new Blob([JSON.stringify(settings)])).then(base64=>archive.push({path:'.viewer-state/viewer-settings.json',mime:'application/json',base64}));
   }
   async function payload(records,resources,options={}){
-    const raw=selectedJSON(records),archive=[],names={},seen=new Set();
-    for(const [id,entry]of resources){
-      if(!raw.includes(id)||seen.has(entry.path))continue;seen.add(entry.path);
+    const raw=selectedJSON(records),archive=[],names={},seen=new Set(),assets=[...resources].filter(([id])=>raw.includes(id));let done=0;
+    for(const [,entry]of assets){
+      await options.onMedia?.(done++,assets.length);
+      if(seen.has(entry.path))continue;seen.add(entry.path);
       archive.push({path:entry.path,mime:entry.mime||entry.blob.type||'application/octet-stream',base64:await base64(entry.blob)});
       if(entry.name)names[entry.path.split('/').pop()]=entry.name;
     }
+    if(assets.length)await options.onMedia?.(assets.length,assets.length);
     archive.push({path:'conversation_asset_file_names.json',mime:'application/json',base64:await base64(new Blob([JSON.stringify(names)]))});
     if(options.editMode)await addSettings(archive,exportSettings(records,(r,index)=>({id:r.id||r.raw.id||'',path:'conversations.json',index}),options));
     return {version:2,sources:[{path:'conversations.json',text:raw}],archive};
@@ -116,7 +118,7 @@
     const binary=atob(match[2]),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));return new Blob([bytes],{type:match[1]});
   }
   async function markdown(records,resources,options={}){
-    const media=[],documents=[],usedTitles=new Set(options.obsidian?[vaultIndex.toLowerCase()]:[]);
+    const media=[],documents=[],usedTitles=new Set(options.obsidian?[vaultIndex.toLowerCase()]:[]);let finished=0;
     for(const r of records){
       const name=unique(options.obsidian?obsidianName(r.raw.title):filename(r.raw.title),usedTitles),sections=['# '+(r.raw.title||'未命名聊天')],assetNames=new Set(),assetPaths=new Map();
       async function include(id,blob,suggested,mime){
@@ -133,7 +135,10 @@
         for(const [start,end,text]of substitutions.reverse())value=value.slice(0,start)+text+value.slice(end);
         return value;
       }
-      for(const id of C.branch(r.raw,options.allBranches?'__all__':options.branches?.get(r.key)).ids){
+      const ids=C.branch(r.raw,options.allBranches?'__all__':options.branches?.get(r.key)).ids;
+      let messageIndex=0;
+      for(const id of ids){
+        await options.onProgress?.(finished+messageIndex++/ids.length,records.length);
         const message=C.nodeMap(r.raw)[id]?.message;if(!C.object(message))continue;
         const info=C.classification(message);if(info.thought&&!options.thoughts||info.tool&&!options.tools)continue;
         sections.push('## '+(( {user:'用户',assistant:'助手',tool:'工具',system:'系统',developer:'系统'})[info.role]||info.role));
@@ -151,6 +156,7 @@
         }
       }
       documents.push({name,title:r.raw.title||name,text:sections.join('\n\n')+'\n'});
+      await options.onProgress?.(++finished,records.length);
     }
     const entries=options.combined?[{path:filename(options.name||'聊天记录')+'.md',blob:new Blob([documents.map(d=>d.text).join('\n\n---\n\n')],{type:'text/markdown'})}]:documents.map(d=>({path:d.name+'.md',blob:new Blob([d.text],{type:'text/markdown'})}));
     if(options.obsidian){

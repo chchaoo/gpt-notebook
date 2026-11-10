@@ -2,6 +2,12 @@
 
 [简体中文](https://github.com/chchaoo/gpt-notebook/wiki/更新记录)
 
+## 1.1.1 — 2026-11-11
+
+- Export a data archive into a named child folder inside the selected parent location.
+- Show preparation, content, packaging and write progress across all export formats.
+- Show PDF/print preparation progress until the system print dialog opens.
+
 ## 1.1.0 — 2026-11-11
 
 - Added Browse and Edit modes with archive-specific state.

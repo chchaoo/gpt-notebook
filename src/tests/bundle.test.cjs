@@ -30,7 +30,7 @@ test('UI ZIP export supports selected scope without rebinding source or marking 
 });
 test('UI folder export and ZIP picker export write copies without modifying current source',async()=>{
  const a=setup({editing:true}),rows=await loaded(a),source=a.api.state.source,folder=memoryFS(),zip=memoryFS();a.ctx.showDirectoryPicker=async()=>folder.root;a.ctx.showSaveFilePicker=async()=>zip.file('selected.zip');
- a.api.openExport([rows[0].key],'directory');await a.api.exportSelection();assert.ok(folder.files.has('chat.html'));assert.equal(a.api.state.source,source);assert.equal(a.api.unsaved(),false);
+ a.api.openExport([rows[0].key],'directory');await a.api.exportSelection();assert.ok(folder.files.has('selected/chat.html'));assert.equal(a.api.state.source,source);assert.equal(a.api.unsaved(),false);
  a.api.openExport([rows[0].key],'zip');await a.api.exportSelection();assert.ok(zip.files.get('selected.zip').size>0);assert.equal(a.api.state.source,source);
  const b=setup({editing:true});await b.api.loadEntries((await IO.zip(zip.files.get('selected.zip'))).entries);assert.equal(b.api.state.records.length,1);
 });

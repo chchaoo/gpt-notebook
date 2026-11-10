@@ -37,9 +37,13 @@
     for(const [name,value]of Object.entries(environment.palette||{}))if(/^--[a-z-]+$/.test(name)&&value)container.style.setProperty(name,value);
     if(environment.fontFamily)container.style.setProperty('--print-family',environment.fontFamily);
     const text=(tag,value)=>{const e=doc.createElement(tag);e.textContent=value;return e};
+    let finished=0;
     for(const record of records){
       const section=doc.createElement('section');section.className='print-chat';const heading=text('h1',record.raw.title||'ChatGPT');heading.className='print-title';section.append(heading);
-      for(const id of C.branch(record.raw,branches?.get(record.key)).ids){
+      const ids=C.branch(record.raw,branches?.get(record.key)).ids;
+      let messageIndex=0;
+      for(const id of ids){
+        await environment.onProgress?.(finished+messageIndex++/ids.length,records.length);
         const message=C.nodeMap(record.raw)[id]?.message;if(!C.object(message))continue;
         const info=C.classification(message);if(info.thought&&!options.thoughts||info.tool&&!options.tools)continue;
         const article=doc.createElement('article');article.className='print-message msg '+info.role;const role=info.thought?'思考记录':({user:'用户',assistant:'助手',tool:'工具',system:'系统'})[info.role]||info.role;
@@ -57,6 +61,7 @@
         const panel=doc.createElement('div');panel.className='message-panel';const body=doc.createElement('div');body.className='msg-content';for(const child of [...article.childNodes])if(child!==header)body.append(child);panel.append(header,body);article.replaceChildren(panel);section.append(article);
       }
       container.append(section);
+      await environment.onProgress?.(++finished,records.length);
     }
     return {element:container,style:css(options),options};
   }

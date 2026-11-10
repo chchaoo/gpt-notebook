@@ -29,6 +29,8 @@
 | **Save & restore** | Save changes to an archive, compare versions and restore incremental history. | [Saving and history](https://github.com/chchaoo/gpt-notebook/wiki/Saving-and-History) |
 | **JSON & source-data copies** | Export original-structure JSON, a data folder or ZIP with relevant attachments. | [Export formats](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#export-what-you-need) |
 
+Folder exports support a custom subfolder name, and exports show preparation and write progress. [Export guide](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#name-a-folder-export).
+
 **Need a ChatGPT export first?** Open **Settings → Data controls → Export data** in ChatGPT. [Follow the illustrated export guide](https://github.com/chchaoo/gpt-notebook/wiki/Export-from-ChatGPT).
 
 

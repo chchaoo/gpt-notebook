@@ -81,7 +81,14 @@
     const size=blob.size,step=4*1024*1024;onBytes(0);if(!size){await stream.write(blob);return}
     for(let offset=0;offset<size;offset+=step){const end=Math.min(size,offset+step);await stream.write(blob.slice(offset,end));onBytes(end)}
   }
-  async function write(handle,blob,progress=()=>{}){const stream=await handle.createWritable({mode:'exclusive'});try{await writeChunks(stream,blob,bytes=>progress('写入 ZIP',blob.size?bytes/blob.size*100:100));progress('提交文件',null);await stream.close()}catch(error){try{await stream.abort?.()}catch(_){}throw error}}
+  async function writeFile(handle,blob,onBytes,onCommit=()=>{}){
+    const stream=await handle.createWritable({mode:'exclusive'});
+    try{await writeChunks(stream,blob,onBytes);onCommit();await stream.close()}
+    catch(error){try{await stream.abort?.()}catch(_){}throw error}
+  }
+  function write(handle,blob,progress=()=>{}){
+    return writeFile(handle,blob,bytes=>progress('写入 ZIP',blob.size?bytes/blob.size*100:100),()=>progress('提交文件',null));
+  }
   async function bindDirectory(source,handle){
     const found=await directory(handle);
     for(const [path,hash]of source.baseline||[])if(found.source.baseline.get(path)!==hash)throw new Error('所选目录与打开时的数据不一致，已停止保存；请选择原目录或另存为');
@@ -145,17 +152,57 @@
     progress('整理文件',null);
     const cleanupFailures=!options.clearMetadata&&(options.clearBackupFolder||changes.some(e=>e.remove&&backupPath(e.path)))?await pruneEmptyBackupFolders(source.handle):[];progress('保存完成',100);return {source:{...source,baseline:hashes},backup:null,written:changes.length,cleanupFailures};
   }
-  async function exportDirectory(handle,entries){
+  function validateExportFolderName(name){
+    if(!name.trim()||name.length>255||/[<>:"/\\|?*\x00-\x1f]|[. ]$/.test(name)||/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(name))
+      throw new Error('请输入有效的文件夹名称。');
+  }
+  async function exportDirectory(handle,entries,progress=()=>{}){
     await permission(handle);
     for await(const child of handle.values())throw new Error('导出文件夹必须为空，请选择或新建一个空目录');
     const seen=new Set();for(const entry of entries){if(!valid(entry.path)||seen.has(entry.path.toLowerCase()))throw new Error('导出路径无效或重复：'+entry.path);seen.add(entry.path.toLowerCase())}
-    const created=[];
+    const created=[],directories=new Map([['',handle]]),total=entries.reduce((sum,entry)=>sum+entry.blob.size,0);
+    let written=0,count=0;
+    const report=bytes=>progress('写入导出文件',total?(written+bytes)/total*100:count/entries.length*100);
     try{
-      for(const entry of entries){if(await maybeFile(handle,entry.path))throw new Error('目标目录中出现了同名文件，已停止导出');const target=await fileAt(handle,entry.path,true);created.push(target);await write(target.handle,entry.blob)}
+      progress('写入导出文件',0);
+      for(const entry of entries){
+        if(await maybeFile(handle,entry.path))throw new Error('目标目录中出现了同名文件，已停止导出');
+        const parts=entry.path.split('/'),name=parts.pop();let path='',parent=handle;
+        for(const part of parts){
+          path+=(path?'/':'')+part;
+          if(!directories.has(path)){
+            let dir;
+            try{dir=await parent.getDirectoryHandle(part)}
+            catch(error){
+              if(error.name!=='NotFoundError')throw error;
+              dir=await parent.getDirectoryHandle(part,{create:true});created.push({parent,name:part});
+            }
+            directories.set(path,dir);
+          }
+          parent=directories.get(path);
+        }
+        const file=await parent.getFileHandle(name,{create:true});created.push({parent,name});
+        await writeFile(file,entry.blob,report);written+=entry.blob.size;count++;
+      }
+      progress('写入导出文件',100);
     }catch(error){
       let incomplete=false;for(const item of created.reverse())try{await item.parent.removeEntry(item.name)}catch(_){incomplete=true}
       throw new Error('文件夹导出失败；'+(incomplete?'部分输出未能清理，请检查目标目录。':'已清理本次创建的文件。')+error.message);
     }
   }
-  return {hidden,valid,backupFiles,pruneEmptyBackupFolders,digest,baseline,directory,readonly,inspectZip,zip,permission,bindDirectory,bindZip,zipBlob,saveZip,saveDirectory,write,exportDirectory};
+  async function exportSubdirectory(parent,name,entries,progress){
+    validateExportFolderName(name);
+    await permission(parent);
+    const key=name.normalize('NFC').toLowerCase();
+    for await(const child of parent.values())if(child.name.normalize('NFC').toLowerCase()===key)throw new Error('目标位置已有同名项目，请更换文件夹名称。');
+    const folder=await parent.getDirectoryHandle(name,{create:true});
+    try{await exportDirectory(folder,entries,progress)}
+    catch(error){
+      // Remove the new folder only if empty. Leave any unrelated additions intact.
+      try{await parent.removeEntry(name)}
+      catch(_){throw new Error('未能清理导出文件夹，请检查目标位置。'+error.message)}
+      throw error;
+    }
+  }
+  return {hidden,valid,backupFiles,pruneEmptyBackupFolders,digest,baseline,directory,readonly,inspectZip,zip,permission,bindDirectory,bindZip,zipBlob,saveZip,saveDirectory,write,exportDirectory,exportSubdirectory,validateExportFolderName};
 });

@@ -29,6 +29,8 @@
 | **保存与恢复** | 保存到资料，查看历史差异并恢复增量备份。 | [保存与历史](https://github.com/chchaoo/gpt-notebook/wiki/保存与历史) |
 | **JSON 与资料副本** | 导出原始结构 JSON、资料文件夹或 ZIP，并带相关附件。 | [导出格式](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#导出需要的内容) |
 
+资料文件夹支持自定义子文件夹名称，各格式导出都有进度提示。[操作说明](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#为资料文件夹命名)。
+
 **还没有 ChatGPT 导出包？** 在 ChatGPT 打开「设置 → 数据控制 → 导出数据」。[查看带截图的导出教程](https://github.com/chchaoo/gpt-notebook/wiki/从ChatGPT导出记录)。
 
 

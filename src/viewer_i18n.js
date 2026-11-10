@@ -4,6 +4,20 @@
   // Catalog rows retain the source text so switching languages never translates
   // user messages or chains translations through another language.
   const rows=[
+    ["文件夹名称", "Folder name", "資料夾名稱", "フォルダー名", "폴더 이름", "Nom du dossier", "Ordnername", "Nombre de carpeta", "Nome da pasta", "Имя папки", "اسم المجلد"],
+    ["输入文件夹名称，再选择存放位置。程序会新建子文件夹并导出聊天和附件。", "Enter a folder name, then choose its location. Chats and attachments will be exported into the new subfolder.", "輸入資料夾名稱，再選擇存放位置。程式會建立子資料夾並匯出對話及附件。", "フォルダー名を入力して保存先を選択してください。新しいサブフォルダーにチャットと添付ファイルをエクスポートします。", "폴더 이름을 입력한 뒤 저장 위치를 선택하세요. 새 하위 폴더에 대화와 첨부 파일을 내보냅니다.", "Saisissez un nom et choisissez un emplacement. Les conversations et pièces jointes seront exportées dans un nouveau sous-dossier.", "Ordnernamen eingeben und Speicherort auswählen. Chats und Anhänge werden in den neuen Unterordner exportiert.", "Escribe un nombre y elige una ubicación. Los chats y archivos se exportarán a la nueva subcarpeta.", "Digite um nome e escolha o local. As conversas e os anexos serão exportados para a nova subpasta.", "Введите имя папки и выберите место. Чаты и вложения будут экспортированы в новую подпапку.", "أدخل اسم المجلد ثم اختر موقعه. ستُصدّر المحادثات والمرفقات إلى مجلد فرعي جديد."],
+    ["请输入有效的文件夹名称。", "Enter a valid folder name.", "請輸入有效的資料夾名稱。", "有効なフォルダー名を入力してください。", "유효한 폴더 이름을 입력하세요.", "Saisissez un nom de dossier valide.", "Geben Sie einen gültigen Ordnernamen ein.", "Introduce un nombre de carpeta válido.", "Digite um nome de pasta válido.", "Введите допустимое имя папки.", "أدخل اسم مجلد صالحًا."],
+    ["目标位置已有同名项目，请更换文件夹名称。", "An item with that name already exists. Choose a different folder name.", "目標位置已有同名項目，請更換資料夾名稱。", "同じ名前の項目が既にあります。別のフォルダー名を選んでください。", "같은 이름의 항목이 있습니다. 다른 폴더 이름을 선택하세요.", "Un élément porte déjà ce nom. Choisissez un autre nom de dossier.", "Ein Element mit diesem Namen ist bereits vorhanden. Wählen Sie einen anderen Ordnernamen.", "Ya existe un elemento con ese nombre. Elige otro nombre de carpeta.", "Já existe um item com esse nome. Escolha outro nome para a pasta.", "Объект с таким именем уже существует. Выберите другое имя папки.", "يوجد عنصر بهذا الاسم بالفعل. اختر اسمًا آخر للمجلد."],
+    ["等待选择导出位置", "Waiting for export location", "等待選擇匯出位置", "エクスポート先の選択を待機中", "내보내기 위치 선택 대기 중", "En attente du choix de l’emplacement", "Warten auf den Exportpfad", "Esperando la ubicación de exportación", "A aguardar o local de exportação", "Ожидание выбора места экспорта", "بانتظار اختيار موقع التصدير"],
+    ["准备导出", "Preparing export", "準備匯出", "エクスポートの準備中", "내보내기 준비 중", "Préparation de l’exportation", "Export wird vorbereitet", "Preparando exportación", "A preparar exportação", "Подготовка экспорта", "جارٍ تجهيز التصدير"],
+    ["整理导出附件", "Preparing attachments", "整理匯出附件", "添付ファイルの準備中", "첨부 파일 준비 중", "Préparation des pièces jointes", "Anhänge werden vorbereitet", "Preparando archivos adjuntos", "A preparar anexos", "Подготовка вложений", "جارٍ تجهيز المرفقات"],
+    ["生成导出内容", "Generating export content", "產生匯出內容", "エクスポート内容を生成中", "내보낼 내용 생성 중", "Génération du contenu à exporter", "Exportinhalt wird erstellt", "Generando contenido de exportación", "A gerar conteúdo para exportação", "Создание содержимого для экспорта", "جارٍ إنشاء محتوى التصدير"],
+    ["打包导出文件", "Packaging export files", "封裝匯出檔案", "エクスポートファイルをまとめています", "내보낼 파일 압축 중", "Préparation de l’archive", "Exportdateien werden gepackt", "Empaquetando archivos de exportación", "A empacotar ficheiros de exportação", "Упаковка экспортируемых файлов", "جارٍ تجميع ملفات التصدير"],
+    ["写入导出文件", "Writing export files", "寫入匯出檔案", "エクスポートファイルを書き込み中", "내보낼 파일 쓰는 중", "Écriture des fichiers exportés", "Exportdateien werden geschrieben", "Escribiendo archivos de exportación", "A escrever ficheiros de exportação", "Запись экспортируемых файлов", "جارٍ كتابة ملفات التصدير"],
+    ["准备打印", "Preparing to print", "準備列印", "印刷の準備中", "인쇄 준비 중", "Préparation de l’impression", "Druck wird vorbereitet", "Preparando impresión", "A preparar impressão", "Подготовка к печати", "جارٍ تجهيز الطباعة"],
+    ["生成打印内容", "Generating print content", "產生列印內容", "印刷内容を生成中", "인쇄할 내용 생성 중", "Génération du contenu à imprimer", "Druckinhalt wird erstellt", "Generando contenido de impresión", "A gerar conteúdo de impressão", "Создание содержимого для печати", "جارٍ إنشاء محتوى الطباعة"],
+    ["加载打印字体和图片", "Loading print fonts and images", "載入列印字型與圖片", "印刷用のフォントと画像を読み込み中", "인쇄 글꼴과 이미지 불러오는 중", "Chargement des polices et images", "Schriftarten und Bilder werden geladen", "Cargando fuentes e imágenes", "A carregar fontes e imagens", "Загрузка шрифтов и изображений", "جارٍ تحميل خطوط وصور الطباعة"],
+    ["打开系统打印窗口", "Opening the system print dialog", "開啟系統列印視窗", "システムの印刷ダイアログを開いています", "시스템 인쇄 창 여는 중", "Ouverture de la fenêtre d’impression", "Systemdruckdialog wird geöffnet", "Abriendo el diálogo de impresión", "A abrir a janela de impressão", "Открытие системного окна печати", "جارٍ فتح نافذة الطباعة"],
     ["编辑模式", "Edit mode", "編輯模式", "編集モード", "편집 모드", "Mode édition", "Bearbeitungsmodus", "Modo de edición", "Modo de edição", "Режим редактирования", "وضع التحرير"],
     ["若要进行操作，请打开编辑模式", "Turn on Edit mode to use this action", "若要進行操作，請開啟編輯模式", "操作するには編集モードをオンにしてください", "이 작업을 하려면 편집 모드를 켜세요", "Activez le mode édition pour utiliser cette action", "Aktivieren Sie den Bearbeitungsmodus für diese Aktion", "Activa el modo de edición para usar esta acción", "Ative o modo de edição para usar esta ação", "Включите режим редактирования для этого действия", "فعّل وضع التحرير لاستخدام هذا الإجراء"],
     ["星标当前会话", "Star current chat", "星標目前對話", "現在のチャットにスター", "현재 대화에 별표", "Favori de la conversation actuelle", "Aktuellen Chat markieren", "Marcar chat actual", "Marcar conversa atual", "Отметить текущий чат", "وضع نجمة للمحادثة الحالية"],
@@ -1169,17 +1183,17 @@
     "В этом сеансе ещё не было правок.",
     "لم تُجرَ تعديلات في هذه الجلسة."
   ],
-  "仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。文件夹请选择空目录。": [
-    "Export only the chosen conversations and related media. The copy can be reopened. Save location and unsaved state stay unchanged. Choose an empty folder.",
-    "僅匯出指定會話結構及相關媒體，可重新開啟；不切換儲存位置或清除未儲存狀態。請選空資料夾。",
-    "指定範囲の会話構造と関連メディアだけを出力し、再度開けます。保存先と未保存状態は変えません。空のフォルダーを選んでください。",
-    "선택한 대화 구조와 관련 미디어만 내보내며 다시 열 수 있습니다. 저장 위치와 미저장 상태는 유지됩니다. 빈 폴더를 선택하세요.",
-    "Exporte seulement les conversations choisies et leurs médias. La copie peut être rouverte, sans changer le lieu de sauvegarde ni l’état non enregistré. Choisissez un dossier vide.",
-    "Exportiert nur die gewählten Chats samt Medien, erneut öffnbar. Speicherort und ungespeicherter Status bleiben erhalten. Leeren Ordner wählen.",
-    "Exporta solo las conversaciones elegidas y sus medios. La copia puede reabrirse sin cambiar el destino ni el estado sin guardar. Elija una carpeta vacía.",
-    "Exporta apenas as conversas escolhidas e os seus meios. A cópia pode ser reaberta, sem mudar o local nem o estado por guardar. Escolha uma pasta vazia.",
-    "Экспортирует только выбранные чаты и медиа с возможностью повторного открытия. Место сохранения и статус изменений не меняются. Выберите пустую папку.",
-    "يُصدّر المحادثات المحددة ووسائطها فقط ويمكن فتح النسخة مجددًا، دون تغيير موقع الحفظ أو حالة التعديلات. اختر مجلدًا فارغًا."
+  "仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。": [
+    "Export only the chosen conversations and related media. The copy can be reopened. Save location and unsaved state stay unchanged.",
+    "僅匯出指定會話結構及相關媒體，可重新開啟；不切換儲存位置或清除未儲存狀態。",
+    "指定範囲の会話構造と関連メディアだけを出力し、再度開けます。保存先と未保存状態は変えません。",
+    "선택한 대화 구조와 관련 미디어만 내보내며 다시 열 수 있습니다. 저장 위치와 미저장 상태는 유지됩니다.",
+    "Exporte seulement les conversations choisies et leurs médias. La copie peut être rouverte, sans changer le lieu de sauvegarde ni l’état non enregistré.",
+    "Exportiert nur die gewählten Chats samt Medien, erneut öffnbar. Speicherort und ungespeicherter Status bleiben erhalten.",
+    "Exporta solo las conversaciones elegidas y sus medios. La copia puede reabrirse sin cambiar el destino ni el estado sin guardar.",
+    "Exporta apenas as conversas escolhidas e os seus meios. A cópia pode ser reaberta, sem mudar o local nem o estado por guardar.",
+    "Экспортирует только выбранные чаты и медиа с возможностью повторного открытия. Место сохранения и статус изменений не меняются.",
+    "يُصدّر المحادثات المحددة ووسائطها فقط ويمكن فتح النسخة مجددًا، دون تغيير موقع الحفظ أو حالة التعديلات."
   ]
 };
   Object.assign(localizedExplanations,{
