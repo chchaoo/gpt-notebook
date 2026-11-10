@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),{setup}=require('./dom_checks.cjs');
 async function open(question,answer='answer first\nanswer second'){
- const a=setup(),record={id:'linebreaks',title:'合成换行测试',current_node:'a',mapping:{q:{parent:null,message:{author:{role:'user'},content:{content_type:'text',parts:[question]}}},a:{parent:'q',message:{author:{role:'assistant'},content:{content_type:'text',parts:[answer]}}}}};
+ const a=setup({editing:true}),record={id:'linebreaks',title:'合成换行测试',current_node:'a',mapping:{q:{parent:null,message:{author:{role:'user'},content:{content_type:'text',parts:[question]}}},a:{parent:'q',message:{author:{role:'assistant'},content:{content_type:'text',parts:[answer]}}}}};
  const raw=JSON.stringify([record]);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([raw])}]);return {...a,raw};
 }
 test('user LF and CRLF single newlines display as breaks while original editing text and saved state stay intact',async()=>{

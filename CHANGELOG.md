@@ -2,6 +2,13 @@
 
 [简体中文](https://github.com/chchaoo/gpt-notebook/wiki/更新记录)
 
+## 1.1.0 — 2026-11-11
+
+- Added Browse and Edit modes with archive-specific state.
+- Added conversation stars and incremental import from another folder or ZIP.
+- Added Obsidian vault export with linked notes, media and MathJax-compatible formulas.
+- Added illustrated instructions for requesting and downloading your ChatGPT export.
+
 ## 1.0.0 — 2026-11-05
 
 First release of GPT Notebook.

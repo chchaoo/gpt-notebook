@@ -3,7 +3,7 @@ const bodyPath=['mapping','q','message','content','parts',0];
 const raw=JSON.stringify([{id:'one',title:'Old title',current_node:'q',mapping:{q:{parent:null,message:{author:{role:'user'},content:{content_type:'text',parts:['Old question\nsecond line']}}}}},{id:'two',title:'Second chat',mapping:{}}]);
 async function open(a,fs){const x=await a.ctx.ViewerStorage.directory(fs.root);await a.api.loadEntries(x.entries,null,x.source);return a.api.state.records.find(r=>r.id==='one')}
 function change(a,r,path,value){a.api.commit([{doc:r.doc,path:[r.index,...path],value}])}
-async function seed(){const a=setup(),fs=memoryFS({'conversations.json':raw}),r=await open(a,fs);change(a,r,['title'],'New title');await a.api.saveWorkspace();change(a,r,bodyPath,'Saved question\nnew second line');await a.api.saveWorkspace();return {a,fs,r,v:[...a.api.journal.data.records[r.historyUid].versions]}}
+async function seed(){const a=setup({editing:true}),fs=memoryFS({'conversations.json':raw}),r=await open(a,fs);change(a,r,['title'],'New title');await a.api.saveWorkspace();change(a,r,bodyPath,'Saved question\nnew second line');await a.api.saveWorkspace();return {a,fs,r,v:[...a.api.journal.data.records[r.historyUid].versions]}}
 function row(a,id){return [...a.document.querySelectorAll('.backup-item')].find(e=>e.dataset.version===id)}
 function expand(a,d){d.open=true;d.dispatchEvent(new a.document.defaultView.Event('toggle'));return d}
 

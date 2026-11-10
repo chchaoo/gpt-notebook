@@ -6,7 +6,7 @@
     "linkedom": "0.18.12"
   },
   "name": "gpt-notebook",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "scripts": {

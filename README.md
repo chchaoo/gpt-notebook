@@ -16,6 +16,22 @@
 
 </div>
 
+## What you can do
+
+| Feature | What it does | Guide |
+| --- | --- | --- |
+| **Markdown & HTML** | Export standalone HTML or Markdown with media. | [Export formats](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#export-what-you-need) |
+| **PDF / Print** | Print selected chats or save them as PDF through the browser. | [PDF and print](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#pdf-and-print) |
+| **Obsidian vault** | Export linked Markdown notes, formulas, an index and local attachments. | [Export to Obsidian](https://github.com/chchaoo/gpt-notebook/wiki/Export-to-Obsidian) |
+| **Split & merge** | Split selected chats into smaller archives or import chats into another archive. | [Split and merge archives](https://github.com/chchaoo/gpt-notebook/wiki/Split-and-Merge-Archives) |
+| **Read & search** | Open folders or ZIPs, search messages and switch branches. | [Reading and search](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#read-and-find) |
+| **Edit & organize** | Turn on Edit mode to edit text, star chats, reorder and undo changes. | [Editing and stars](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#edit-a-draft) |
+| **Save & restore** | Save changes to an archive, compare versions and restore incremental history. | [Saving and history](https://github.com/chchaoo/gpt-notebook/wiki/Saving-and-History) |
+| **JSON & source-data copies** | Export original-structure JSON, a data folder or ZIP with relevant attachments. | [Export formats](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#export-what-you-need) |
+
+**Need a ChatGPT export first?** Open **Settings → Data controls → Export data** in ChatGPT. [Follow the illustrated export guide](https://github.com/chchaoo/gpt-notebook/wiki/Export-from-ChatGPT).
+
+
 <div align="center">
 
 <img src="docs/images/en/reading.png" width="820" alt="GPT Notebook reading a fictional sample">
@@ -23,14 +39,6 @@
 *Actual application screenshot. All conversations shown are fictional [samples](examples/en/sample-archive.zip).*
 
 </div>
-
-## Why GPT Notebook?
-
-- **Read & find** — Conversation branches, full-text search, Markdown, code, formulas and local media
-- **Edit** — Titles and messages, Markdown and visual modes, undo/redo
-- **Save & revisit** — Save / Save as, incremental history, change summaries and version comparisons
-- **Export** — HTML, Markdown, JSON, PDF/print, source-data folder or ZIP; current, selected or all chats
-- **Make it yours** — Eleven interface languages, themes, font settings and remembered reading positions
 
 ## A closer look
 
@@ -70,7 +78,7 @@ Choose the range and format; exports include your current draft. [Export guide](
 ## Get started
 
 1. Download **gpt-notebook.html** and open it in a recent desktop Chrome or Edge.
-2. Open your ChatGPT export folder or ZIP, keeping JSON and attachments together.
+2. [Request a ChatGPT export](https://github.com/chchaoo/gpt-notebook/wiki/Export-from-ChatGPT) if you do not have one, then open the ZIP or the extracted folder.
 3. Select a conversation. Read, edit a draft, save, or export what you need.
 
 No installation, server, account or API key. Try the [sample ZIP](examples/en/sample-archive.zip) first. [Step-by-step guide](https://github.com/chchaoo/gpt-notebook/wiki/Get-Started).

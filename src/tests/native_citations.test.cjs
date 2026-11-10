@@ -15,7 +15,7 @@ test('citation examples in code and invalid markers stay literal; link labels do
  const html=M.render('['+label+'](https://example.org/outer)',{message:{metadata:{content_references:[{ref_id:ids[0],url:'https://example.org/inner'}]}}});assert.equal((html.match(/<a /g)||[]).length,1);
 });
 test('actual preview and print resolve citation badges without editing source or dirtying the workspace',async()=>{
- const a=setup(),message={author:{role:'assistant'},content:{content_type:'text',parts:['结论 '+native]},metadata:{content_references:[{ref_id:ids[0],url:'https://example.org/source',title:'Synthetic source'}]}};
+ const a=setup({editing:true}),message={author:{role:'assistant'},content:{content_type:'text',parts:['结论 '+native]},metadata:{content_references:[{ref_id:ids[0],url:'https://example.org/source',title:'Synthetic source'}]}};
  const source=JSON.stringify([{id:'native-cite',title:'引用合成样例',current_node:'a',mapping:{a:{parent:null,message}}}]);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([source])}]);
  const body=a.document.querySelector('#msgs .msg-content');assert.ok(body.querySelector('sup a[href="https://example.org/source"]'));assert.equal(body.querySelector('.export-citation').title,ids[1]);assert.equal(body.textContent.includes('〔引用：'),false);assert.equal(a.api.unsaved(),false);assert.equal(a.api.state.docs[0].text,source);
  a.ctx.print=()=>{};a.document.getElementById('quick-pdf').click();await a.api.startPrint();assert.ok(a.document.querySelector('#print-document sup a[href="https://example.org/source"]'));assert.equal(a.document.querySelector('#print-document .export-citation').title,ids[1]);assert.equal(a.api.unsaved(),false);

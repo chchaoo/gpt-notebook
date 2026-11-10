@@ -39,7 +39,7 @@ test('title filename cleanup remains Windows-safe after truncation in all export
  const entries=records(['e\u0301','é']);const used=new Set();assert.notEqual(E.unique(E.filename(entries[0].raw.title),used),E.unique(E.filename(entries[1].raw.title),used));
 });
 test('HTML and JSON separate exports already use title names and deduplicate, without ordinal prefixes',async()=>{
- const a=setup(),rows=records(['同名','同名','不同标题']);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([C.serialize(rows[0].doc)])}]);
+ const a=setup({editing:true}),rows=records(['同名','同名','不同标题']);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([C.serialize(rows[0].doc)])}]);
  for(const format of ['html','json']){
   a.api.openExport(a.api.state.records.map(r=>r.key),format);a.document.getElementById('export-layout').value='separate';await a.api.exportSelection();
   const archive=await Zip.loadAsync(await a.downloads.at(-1).blob.arrayBuffer()),files=Object.keys(archive.files).filter(p=>!archive.files[p].dir);
@@ -48,7 +48,7 @@ test('HTML and JSON separate exports already use title names and deduplicate, wi
  }
 });
 test('toolbar, File flyout and generic Print all wait for page settings confirmation',async()=>{
- const a=setup(),d=a.document,rows=records(['one','two']);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([C.serialize(rows[0].doc)])}]);let prints=0;a.ctx.print=()=>prints++;
+ const a=setup({editing:true}),d=a.document,rows=records(['one','two']);await a.api.loadEntries([{path:'conversations.json',blob:new Blob([C.serialize(rows[0].doc)])}]);let prints=0;a.ctx.print=()=>prints++;
  for(const id of ['quick-print','flyout-print']){d.getElementById(id).click();assert.equal(d.getElementById('print-dialog').open,true);assert.equal(prints,0);assert.equal(d.getElementById('print-heading').textContent,'打印');d.getElementById('print-dialog').close()}
  a.api.openExport(undefined,'print');d.getElementById('export-range').value='all';await a.api.exportSelection();assert.equal(d.getElementById('print-dialog').open,true);assert.equal(d.getElementById('print-scope').value,'all');assert.equal(prints,0);
  d.getElementById('print-paper').value='Letter';d.getElementById('print-orientation').value='landscape';await a.api.startPrint();assert.equal(prints,1);assert.ok(d.getElementById('print-page-style').textContent.includes('279.4mm 215.9mm'));

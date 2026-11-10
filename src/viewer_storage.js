@@ -7,14 +7,15 @@
   const oldControl=path=>controls.has(path)||['.viewer-backups/viewer-history.json','.viewer-backups/viewer-settings.json'].includes(path);
   const hidden=path=>{const parts=path.split('/');if(parts.some(p=>p==='__MACOSX'||p==='.DS_Store'))return true;let i=parts.indexOf('.viewer-state');if(i>=0)return !(i===parts.length-1||i===parts.length-2&&controls.has(parts.at(-1)));i=parts.indexOf('.viewer-backups');return i>=0&&!(i===parts.length-1||i===parts.length-2&&controls.has(parts.at(-1))||parts.slice(i).join('/')==='.viewer-backups/segments'||segment(parts.slice(i).join('/')))};
   const valid=path=>C.validPath(path)&&!hidden(path)&&!['.viewer-backups','.viewer-state','.viewer-backups/segments'].includes(path);
-  async function backupFiles(handle){
-    let folder;try{folder=await handle.getDirectoryHandle('.viewer-backups')}catch(error){if(error.name==='NotFoundError')return [];throw error}const files=[];
-    async function walk(dir,prefix){for await(const child of dir.values()){const path=prefix+'/'+child.name;if(!backupPath(path))throw new Error('保存路径无效');if(child.kind==='directory')await walk(child,path);else files.push({path,blob:await child.getFile()})}}
-    await walk(folder,'.viewer-backups');return files;
+  const metadataPath=path=>C.validPath(path)&&(path.startsWith('.viewer-state/')||backupPath(path));
+  async function backupFiles(handle,name='.viewer-backups'){
+    let folder;try{folder=await handle.getDirectoryHandle(name)}catch(error){if(error.name==='NotFoundError')return [];throw error}const files=[];
+    async function walk(dir,prefix){for await(const child of dir.values()){const path=prefix+'/'+child.name;if(!metadataPath(path))throw new Error('保存路径无效');if(child.kind==='directory')await walk(child,path);else files.push({path,blob:await child.getFile()})}}
+    await walk(folder,name);return files;
   }
-  async function pruneEmptyBackupFolders(handle){
-    const failed=[];async function visit(parent,name,path){let dir;try{dir=await parent.getDirectoryHandle(name)}catch(error){if(error.name==='NotFoundError')return;failed.push(path);return}try{for await(const child of dir.values())if(child.kind==='directory')await visit(dir,child.name,path+'/'+child.name);for await(const child of dir.values())return;await parent.removeEntry(name)}catch(_){failed.push(path)}}
-    await visit(handle,'.viewer-backups','.viewer-backups');return failed;
+  async function pruneEmptyBackupFolders(handle,name='.viewer-backups',strict=false){
+    const failed=[];async function visit(parent,name,path){let dir;try{dir=await parent.getDirectoryHandle(name)}catch(error){if(error.name==='NotFoundError')return;failed.push(path);return}try{for await(const child of dir.values())if(child.kind==='directory')await visit(dir,child.name,path+'/'+child.name);for await(const child of dir.values()){if(strict)failed.push(path);return}await parent.removeEntry(name)}catch(_){failed.push(path)}}
+    await visit(handle,name,name);return failed;
   }
   async function digest(blob){
     const bytes=new Uint8Array(await blob.arrayBuffer());
@@ -93,7 +94,8 @@
   async function zipBlob(source,entries,progress=()=>{}){
     progress('准备 ZIP',null);
     const output=source?.kind==='zip'&&source.zip?await JSZip.loadAsync(await source.zip.generateAsync({type:'uint8array'},meta=>progress('准备 ZIP',meta.percent))):new JSZip();
-    if(entries.clearBackupFolder)output.remove((source?.prefix||'')+'.viewer-backups/');
+    if(entries.clearMetadata)output.remove((source?.prefix||'')+'.viewer-state/');
+    if(entries.clearBackupFolder||entries.clearMetadata)output.remove((source?.prefix||'')+'.viewer-backups/');
     for(const path of entries.removedPaths||[])output.remove((source?.prefix||'')+path);
     for(const [i,entry]of entries.entries()){if(!valid(entry.path))throw new Error('保存路径无效');output.file((source?.prefix||'')+entry.path,new Uint8Array(await entry.blob.arrayBuffer()));progress('整理文件',(i+1)/entries.length*100)}
     if(Object.keys(output.files).length>=65535)throw new Error('文件数量超出普通 ZIP 限制，请改存目录');
@@ -112,7 +114,8 @@
     for(const [index,entry]of candidates.entries()){progress('检查文件',candidates.length?index/candidates.length*100:100);if(!valid(entry.path))throw new Error('保存路径无效');const old=await maybeFile(source.handle,entry.path),blob=old?await old.handle.getFile():null,found=blob?await digest(blob):null,next=await digest(entry.blob);hashes.set(entry.path,next);if(found===next)continue;if(found!==(source.baseline.get(entry.path)||null))throw new Error('源文件在其他程序中已修改：'+entry.path);changes.push({...entry,old,before:blob,restore:options.rollback?.get(entry.path),found})}
     progress('检查文件',100);
     const removePaths=new Set(options.removePaths||[]);if(options.clearBackupFolder)for(const entry of await backupFiles(source.handle))removePaths.add(entry.path);
-    for(const path of removePaths){if(!oldControl(path)&&!segment(path)&&!(options.clearBackupFolder&&backupPath(path)))throw new Error('保存路径无效');const old=await maybeFile(source.handle,path);if(!old){if(source.baseline.has(path))throw new Error('源文件在其他程序中已修改：'+path);continue}const before=await old.handle.getFile(),found=await digest(before);if(found!==source.baseline.get(path)&&!(options.clearBackupFolder&&backupPath(path)&&!source.baseline.has(path)))throw new Error('源文件在其他程序中已修改：'+path);const restore=options.rollback?.get(path),snapshot=restore?before:new Blob([await before.arrayBuffer()]);changes.push({path,old,before:snapshot,found,remove:true,restore});hashes.delete(path)}
+    if(options.clearMetadata)for(const name of ['.viewer-state','.viewer-backups'])for(const entry of await backupFiles(source.handle,name))removePaths.add(entry.path);
+    for(const path of removePaths){if(!(options.clearMetadata&&metadataPath(path))&&!oldControl(path)&&!segment(path)&&!(options.clearBackupFolder&&backupPath(path)))throw new Error('保存路径无效');const old=await maybeFile(source.handle,path);if(!old){if(source.baseline.has(path))throw new Error('源文件在其他程序中已修改：'+path);continue}const before=await old.handle.getFile(),found=await digest(before);if(found!==source.baseline.get(path)&&!((options.clearMetadata&&metadataPath(path)||options.clearBackupFolder&&backupPath(path))&&!source.baseline.has(path)))throw new Error('源文件在其他程序中已修改：'+path);const restore=options.rollback?.get(path),snapshot=restore?before:new Blob([await before.arrayBuffer()]);changes.push({path,old,before:snapshot,found,remove:true,restore});hashes.delete(path)}
     // Commit the small reverse-delta journal first. Individual file writes use
     // the browser's atomic writer; normal errors roll back from RAM only.
     const priority=e=>segment(e.path)?0:e.path==='.viewer-state/viewer-history.json'?1:2;changes.sort((a,b)=>priority(a)-priority(b));
@@ -125,6 +128,12 @@
       progress('提交文件',0);
       for(const item of opened){await item.stream.close();committed.push(item);progress('提交文件',++submitted/changes.length*100)}
       for(const entry of changes.filter(e=>e.remove)){await entry.old.parent.removeEntry(entry.old.name);committed.push({entry,target:entry.old,removed:true});progress('提交文件',++submitted/changes.length*100)}
+      if(options.clearMetadata){
+        for(const name of ['.viewer-state','.viewer-backups']){
+          const failures=await pruneEmptyBackupFolders(source.handle,name,true);
+          if(failures.length)throw new Error('无法移除查看器目录：'+name);
+        }
+      }
     }catch(error){
       progress('回滚文件',null);
       let failed=false;for(const item of opened)try{await item.stream?.abort?.()}catch(_){}
@@ -134,7 +143,7 @@
       throw new Error('保存失败，'+(failed?'部分回滚失败，请保留当前页面并检查原目录。':'已回滚本次文件修改。')+error.message);
     }
     progress('整理文件',null);
-    const cleanupFailures=options.clearBackupFolder||changes.some(e=>e.remove&&backupPath(e.path))?await pruneEmptyBackupFolders(source.handle):[];progress('保存完成',100);return {source:{...source,baseline:hashes},backup:null,written:changes.length,cleanupFailures};
+    const cleanupFailures=!options.clearMetadata&&(options.clearBackupFolder||changes.some(e=>e.remove&&backupPath(e.path)))?await pruneEmptyBackupFolders(source.handle):[];progress('保存完成',100);return {source:{...source,baseline:hashes},backup:null,written:changes.length,cleanupFailures};
   }
   async function exportDirectory(handle,entries){
     await permission(handle);

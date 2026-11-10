@@ -55,25 +55,25 @@ test('search supports case, wildcards, whole words, accents and safe regex',()=>
 });
 test('print validates sizes, preserves drafts and full content beyond the preview batch',async()=>{
  assert.deepEqual(Print.settings({paper:'A4',orientation:'landscape'}).width,297);assert.throws(()=>Print.settings({paper:'custom',width:50,height:50,margin:40}));
- const a=setup(),mapping={};for(let i=0;i<55;i++)mapping['n'+i]={parent:i?'n'+(i-1):null,message:{author:{role:'assistant'},content:{content_type:'text',parts:['message '+i]}}};
+ const a=setup({editing:true}),mapping={};for(let i=0;i<55;i++)mapping['n'+i]={parent:i?'n'+(i-1):null,message:{author:{role:'assistant'},content:{content_type:'text',parts:['message '+i]}}};
  await a.api.loadEntries(entries({'conversations.json':JSON.stringify([{title:'test',current_node:'n54',mapping}])}));const r=a.api.state.records[0];
  a.api.commit([{doc:r.doc,path:[0,'mapping','n54','message','content','parts',0],value:'UNSAVED LAST MESSAGE'}]);
  let prints=0;a.ctx.print=()=>prints++;a.document.getElementById('print-scope').value='all';await a.api.startPrint();
  assert.equal(prints,1);assert.equal(a.document.querySelectorAll('#print-document .print-message').length,55);assert.ok(a.document.getElementById('print-document').textContent.includes('UNSAVED LAST MESSAGE'));assert.equal(a.api.unsaved(),true);
 });
 test('selection actions stay fixed, select all visible items and clear selection',async()=>{
- const a=setup();await a.api.loadEntries(entries({'conversations.json':'[{"title":"A","mapping":{}},{"title":"B","mapping":{}}]'}));
+ const a=setup({editing:true});await a.api.loadEntries(entries({'conversations.json':'[{"title":"A","mapping":{}},{"title":"B","mapping":{}}]'}));
  const d=a.document;assert.equal(d.getElementById('selection-tools').hidden,false);d.getElementById('search').value='A';await a.api.renderList();
  d.getElementById('select-visible').click();assert.equal(a.api.state.selected.size,1);assert.equal(a.api.state.multi,true);d.getElementById('select-none').click();assert.equal(a.api.state.selected.size,0);assert.equal(d.getElementById('selection-delete').disabled,true);
  assert.ok(d.getElementById('selection-count').parentElement.classList.contains('list-management'));assert.ok(d.getElementById('selection-tools').parentElement.classList.contains('sidebar-summary'));
 });
 test('language changes UI only and side pane width is clamped',async()=>{
- const a=setup();await a.api.loadEntries(entries({'conversations.json':'[{"title":"文件","mapping":{}}]'}));a.ctx.ViewerI18n.setLanguage('en');
+ const a=setup({editing:true});await a.api.loadEntries(entries({'conversations.json':'[{"title":"文件","mapping":{}}]'}));a.ctx.ViewerI18n.setLanguage('en');
  assert.equal(a.document.querySelector('.conv-title').textContent,'文件');assert.equal(a.document.querySelector('.menu-bar summary').textContent,'File');
  assert.equal(a.api.applySidebarWidth(5),260);assert.equal(a.api.applySidebarWidth(9999),640);
 });
 test('saved edit undone to original is still unsaved and regenerates chat HTML',async()=>{
- const a=setup(),raw='[{"title":"original","mapping":{}}]',fs=memoryFS({'conversations.json':raw,'chat.html':'<script>var jsonData='+raw+';var assetsJson={};</script>'});
+ const a=setup({editing:true}),raw='[{"title":"original","mapping":{}}]',fs=memoryFS({'conversations.json':raw,'chat.html':'<script>var jsonData='+raw+';var assetsJson={};</script>'});
  const opened=await a.ctx.ViewerStorage.directory(fs.root);await a.api.loadEntries(opened.entries,null,opened.source);const r=a.api.state.records[0];
  a.api.commit([{doc:r.doc,path:[0,'title'],value:'saved change'}]);await a.api.saveWorkspace();assert.equal(a.api.unsaved(),false);
  a.api.historyEdit('undo');assert.equal(a.api.unsaved(),true);await a.api.saveWorkspace();assert.equal(a.api.unsaved(),false);
@@ -81,7 +81,7 @@ test('saved edit undone to original is still unsaved and regenerates chat HTML',
 });
 test('title index groups Chinese pinyin, polyphones, Latin and symbols consistently',async()=>{
  const T=require('../viewer_title_index.js');assert.equal(T.info('重庆旅行').group,'C');assert.equal(T.info('信号处理').group,'X');assert.equal(T.info('École').group,'E');assert.equal(T.info('123').group,'#');
- const a=setup(),rows=[...Array.from({length:205},(_,i)=>({title:'阿 '+i,mapping:{}})),{title:'信号处理',mapping:{}}];
+ const a=setup({editing:true}),rows=[...Array.from({length:205},(_,i)=>({title:'阿 '+i,mapping:{}})),{title:'信号处理',mapping:{}}];
  await a.api.loadEntries(entries({'conversations.json':JSON.stringify(rows)}));a.api.state.sort='title';await a.api.renderList();
  const rail=a.document.getElementById('alphabet-index');assert.equal(rail.hidden,false);assert.equal(rail.querySelectorAll('button').length,27);
  const x=[...rail.querySelectorAll('button')].find(b=>b.textContent==='X');x.click();for(let i=0;i<60&&!a.document.querySelector('[data-letter="X"][data-scrolled="1"]');i++)await new Promise(r=>setTimeout(r,5));
@@ -89,11 +89,11 @@ test('title index groups Chinese pinyin, polyphones, Latin and symbols consisten
  a.api.state.sort='updated';await a.api.renderList();assert.equal(rail.hidden,true);
 });
 test('menus close each other and outside clicks close the open menu',()=>{
- const a=setup(),menus=[...a.document.querySelectorAll('.exclusive-menu')],first=menus[2],second=menus[3];first.open=true;
+ const a=setup({editing:true}),menus=[...a.document.querySelectorAll('.exclusive-menu')],first=menus[2],second=menus[3];first.open=true;
  second.querySelector('summary').click();assert.equal(first.open,false);second.open=true;a.document.body.click();assert.equal(second.open,false);
 });
 test('internal image drags are ignored; external preview drop is limited to the marked target',async()=>{
- const a=setup(),d=a.document;await a.api.loadEntries(entries({'conversations.json':'[{"title":"original","mapping":{}}]'}));
+ const a=setup({editing:true}),d=a.document;await a.api.loadEntries(entries({'conversations.json':'[{"title":"original","mapping":{}}]'}));
  const image=d.createElement('img');d.getElementById('msgs').append(image);const start=new d.defaultView.Event('dragstart',{bubbles:true,cancelable:true});image.dispatchEvent(start);assert.equal(start.defaultPrevented,true);
  const enter=new d.defaultView.Event('dragenter',{bubbles:true,cancelable:true});enter.dataTransfer={types:['Files']};d.body.dispatchEvent(enter);assert.ok(d.body.classList.contains('external-drop'));
  const drop=new d.defaultView.Event('drop',{bubbles:true,cancelable:true});drop.dataTransfer={types:['Files'],files:[new Blob(['bad'])],items:[]};d.getElementById('msgs').dispatchEvent(drop);

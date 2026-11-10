@@ -16,6 +16,22 @@
 
 </div>
 
+## 可以做什么
+
+| 功能 | 能做什么 | 详细说明 |
+| --- | --- | --- |
+| **转 Markdown／HTML** | 导出带媒体的 Markdown，或可直接打开的独立 HTML。 | [导出格式](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#导出需要的内容) |
+| **转 PDF／打印** | 打印所选聊天，或在浏览器中另存为 PDF。 | [PDF 与打印](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#pdf-与打印) |
+| **Obsidian 知识库** | 生成带索引、公式和本地附件的独立聊天笔记。 | [导出到 Obsidian](https://github.com/chchaoo/gpt-notebook/wiki/导出到Obsidian) |
+| **拆分与合并** | 把所选聊天拆成多个资料包，或向另一份资料增量导入。 | [拆分与合并资料](https://github.com/chchaoo/gpt-notebook/wiki/拆分与合并资料) |
+| **阅读与搜索** | 打开目录或 ZIP，搜索全文，切换聊天分支。 | [阅读与搜索](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#阅读与查找) |
+| **编辑与整理** | 开启编辑模式后修改文字、星标、手动排序或撤销。 | [编辑与星标](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#编辑草稿) |
+| **保存与恢复** | 保存到资料，查看历史差异并恢复增量备份。 | [保存与历史](https://github.com/chchaoo/gpt-notebook/wiki/保存与历史) |
+| **JSON 与资料副本** | 导出原始结构 JSON、资料文件夹或 ZIP，并带相关附件。 | [导出格式](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#导出需要的内容) |
+
+**还没有 ChatGPT 导出包？** 在 ChatGPT 打开「设置 → 数据控制 → 导出数据」。[查看带截图的导出教程](https://github.com/chchaoo/gpt-notebook/wiki/从ChatGPT导出记录)。
+
+
 <div align="center">
 
 <img src="docs/images/zh-CN/reading.png" width="820" alt="GPT Notebook 阅读虚构样例">
@@ -23,14 +39,6 @@
 *真实运行界面。图中全部聊天均为[虚构样例](examples/zh-CN/sample-archive.zip)。*
 
 </div>
-
-## 为什么用 GPT Notebook？
-
-- **阅读与查找** — 聊天分支、全文搜索、Markdown、代码、公式及本地媒体
-- **编辑** — 修改标题和消息，支持 Markdown、可视化编辑及撤销／重做
-- **保存与回顾** — 保存／另存为、增量历史、变更摘要及版本对照
-- **导出** — HTML、Markdown、JSON、PDF／打印、资料文件夹或 ZIP；支持当前、所选及全部聊天
-- **个性化** — 十一种界面语言、主题、字体设置及阅读位置记忆
 
 ## 界面一览
 
@@ -70,7 +78,7 @@
 ## 开始使用
 
 1. 下载 **gpt-notebook.html**，用较新的桌面 Chrome 或 Edge 打开。
-2. 打开 ChatGPT 导出的文件夹或 ZIP，保留 JSON 与附件的相对位置。
+2. 如还没有资料，先按[图文教程导出 ChatGPT 记录](https://github.com/chchaoo/gpt-notebook/wiki/从ChatGPT导出记录)，再打开 ZIP 或解压文件夹。
 3. 选择聊天，开始阅读、编辑草稿、保存或导出。
 
 无需安装、服务器、账号或 API 密钥。可以先下载[样例 ZIP](examples/zh-CN/sample-archive.zip)体验。[详细步骤](https://github.com/chchaoo/gpt-notebook/wiki/开始使用)。

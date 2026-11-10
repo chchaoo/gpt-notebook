@@ -19,11 +19,14 @@ function setup(options={}){
   ctx.window=ctx.self=ctx;vm.createContext(ctx);
   for(const file of ['viewer_core.js','vendor/jszip/jszip.min.js','viewer_storage.js','vendor/re2js/build/index.umd.js','viewer_search.js','viewer_i18n.js','viewer_navigation.js','viewer_transfer.js','viewer_exports.js','marked.min.js','vendor/katex/dist/katex.min.js','viewer_markdown.js','viewer_print.js','vendor/pinyin-pro/dist/index.js','viewer_title_index.js','viewer_outline.js','viewer_history.js','viewer_journal.js','viewer_journal_store.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),ctx);
   let app=fs.readFileSync(path.join(__dirname,'../viewer_app.js'),'utf8');
-  app=app.replace('updateChanges(); loadBaked();','globalThis.api={state,selectRecord,loadEntries,renderList,renderCurrent,navigateSearch,commit,historyEdit,editMessage,plainText,saveWorkspace,saveAsChoice,workspaceEntries,audit,selectRange,showChanges,focusHistoryTarget,jumpToTurn,turnOutline,startPrint,openPrint,applySidebarWidth,unsaved,requestClose,closeWorkspace,openExport,exportRecords,exportSelection,deleteRecords,orderedRecords,moveRecord,workspaceArchive,journal,showBackups,restoreBackup,deleteBackup,backupSnapshot};updateChanges();');
+  // Older editing suites exercise an archive whose editing baseline is
+  // already enabled. Edit-mode tests use the unchanged production default.
+  if(options.editing)app=app.replace('state.editMode=Boolean(settings||controlEntry(ViewerJournalStore.path));','state.editMode=true;');
+  app=app.replace('updateChanges(); loadBaked();','globalThis.api={state,selectRecord,loadEntries,renderList,renderCurrent,navigateSearch,commit,historyEdit,editMessage,plainText,saveWorkspace,saveAsChoice,workspaceEntries,audit,selectRange,showChanges,focusHistoryTarget,jumpToTurn,turnOutline,startPrint,openPrint,applySidebarWidth,unsaved,requestClose,closeWorkspace,openExport,exportRecords,exportSelection,deleteRecords,orderedRecords,moveRecord,workspaceArchive,journal,showBackups,restoreBackup,deleteBackup,backupSnapshot,toggleEditMode,toggleStar,runImport};updateChanges();');
   vm.runInContext(app,ctx);return {api:ctx.api,document,ctx,downloads,urls};
 }
 async function main(){
-  const a=setup(),q='信号';
+  const a=setup({editing:true}),q='信号';
   const c={id:'demo',title:'信号学习与信号处理',current_node:'new',mapping:{
     q:{parent:null,message:{author:{role:'user'},content:{content_type:'text',parts:['解释信号']},create_time:1}},
     old:{parent:'q',message:{author:{role:'assistant'},content:{content_type:'text',parts:['其他分支的信号']},create_time:2}},

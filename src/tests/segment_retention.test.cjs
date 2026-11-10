@@ -75,49 +75,49 @@ test('rewriting a suffix remains readable by the original 143 linked-chain contr
 });
 
 async function openUI(a,disk){const x=await a.ctx.ViewerStorage.directory(disk.root);await a.api.loadEntries(x.entries,null,x.source);return a.api.state.records.find(r=>r.id==='one')}
-async function diskSeed(t){const disk=await diskFS(t,{'conversations.json':raw}),a=setup(),r=await openUI(a,disk);for(const title of ['B','C','D','E','F','G']){a.api.commit([{doc:r.doc,path:[r.index,'title'],value:title}]);assert.equal(await a.api.saveWorkspace(),true)}return {disk,a,r}}
+async function diskSeed(t){const disk=await diskFS(t,{'conversations.json':raw}),a=setup({editing:true}),r=await openUI(a,disk);for(const title of ['B','C','D','E','F','G']){a.api.commit([{doc:r.doc,path:[r.index,'title'],value:title}]);assert.equal(await a.api.saveWorkspace(),true)}return {disk,a,r}}
 
-test('real disk: suffix deletion never opens unchanged prefix files, preserves drafts, and reopens every retained state',async t=>{
+test('V38 real disk: suffix deletion never opens unchanged prefix files, preserves drafts, and reopens every retained state',async t=>{
  const {disk,a,r}=await diskSeed(t),before=await disk.contents(),paths=[...a.api.state.entries.keys()].filter(Store.managed),versions=a.api.journal.data.records[r.historyUid].versions,expected=new Map(versions.map(v=>[v.id,a.api.journal.target(r.historyUid,v.id)]));
  a.api.commit([{doc:r.doc,path:[r.index,'title'],value:'draft kept'}]);const start=disk.calls.length;assert.equal(await a.api.deleteBackup('edit',r.historyUid,versions[4].id),true);expected.delete(versions[4].id);
  const after=await disk.contents();for(const p of paths.slice(0,3)){assert.deepEqual(after.get(p),before.get(p));assert.equal(disk.calls.slice(start).some(([,path])=>path===p),false)}
  assert.deepEqual(after.get('conversations.json'),before.get('conversations.json'));assert.equal(r.raw.title,'draft kept');assert.equal(a.api.unsaved(),true);assert.equal([...after.keys()].filter(Store.managed).length,5);
- const b=setup(),row=await openUI(b,disk);for(const [id,raw] of expected)assert.equal(b.api.journal.target(row.historyUid,id),raw);
- assert.equal(await a.api.saveWorkspace(),true);const c=setup(),saved=await openUI(c,disk);assert.equal(saved.raw.title,'draft kept');assert.equal([...c.api.state.entries.keys()].filter(Store.managed).length,6);
+ const b=setup({editing:true}),row=await openUI(b,disk);for(const [id,raw] of expected)assert.equal(b.api.journal.target(row.historyUid,id),raw);
+ assert.equal(await a.api.saveWorkspace(),true);const c=setup({editing:true}),saved=await openUI(c,disk);assert.equal(saved.raw.title,'draft kept');assert.equal([...c.api.state.entries.keys()].filter(Store.managed).length,6);
 });
 
-test('real disk: failures at new payload, index commit and each suffix removal restore exact files and permit retry',async t=>{
+test('V38 real disk: failures at new payload, index commit and each suffix removal restore exact files and permit retry',async t=>{
  const {disk,a,r}=await diskSeed(t),versions=a.api.journal.data.records[r.historyUid].versions,paths=[...a.api.state.entries.keys()].filter(Store.managed),before=await disk.contents();
  const cases=[['write','payload'],['close','payload'],['close',Store.path],...paths.slice(3).map(p=>['remove',p])];
  for(const [phase,target]of cases){let triggered=false;disk.control.fail=(action,p)=>!triggered&&action===phase&&(target==='payload'?Store.managed(p)&&!before.has(p):p===target)?(triggered=true,new Error('injected '+phase)):null;
   assert.equal(await a.api.deleteBackup('edit',r.historyUid,versions[4].id),false,phase+' '+target);assert.equal(triggered,true);const actual=await disk.contents();assert.deepEqual([...actual.keys()].sort(),[...before.keys()].sort());for(const [p,bytes]of before)assert.deepEqual(actual.get(p),bytes,p);assert.equal(a.api.journal.data.records[r.historyUid].versions.length,6);
-  const b=setup(),row=await openUI(b,disk);assert.equal(b.api.journal.data.records[row.historyUid].versions.length,6);
+  const b=setup({editing:true}),row=await openUI(b,disk);assert.equal(b.api.journal.data.records[row.historyUid].versions.length,6);
  }
  disk.control.fail=null;assert.equal(await a.api.deleteBackup('edit',r.historyUid,versions[4].id),true);assert.equal([...(await disk.contents()).keys()].filter(Store.managed).length,5);
 });
 
-test('ZIP: deletion preserves separate segments, retained restoration states and unsaved chat drafts',async()=>{
- const a=setup(),zip=new a.ctx.JSZip();zip.file('export/conversations.json',raw);const disk=memoryFS({'data.zip':await zip.generateAsync({type:'uint8array'})}),x=await a.ctx.ViewerStorage.zip(await disk.file('data.zip').getFile(),disk.file('data.zip'));await a.api.loadEntries(x.entries,null,x.source);
+test('V38 ZIP: deletion preserves separate segments, retained restoration states and unsaved chat drafts',async()=>{
+ const a=setup({editing:true}),zip=new a.ctx.JSZip();zip.file('export/conversations.json',raw);const disk=memoryFS({'data.zip':await zip.generateAsync({type:'uint8array'})}),x=await a.ctx.ViewerStorage.zip(await disk.file('data.zip').getFile(),disk.file('data.zip'));await a.api.loadEntries(x.entries,null,x.source);
  const r=a.api.state.records[0];for(const title of ['B','C','D','E']){a.api.commit([{doc:r.doc,path:[r.index,'title'],value:title}]);assert.equal(await a.api.saveWorkspace(),true)}
  const versions=a.api.journal.data.records[r.historyUid].versions,expected=new Map(versions.map(v=>[v.id,a.api.journal.target(r.historyUid,v.id)]));a.api.commit([{doc:r.doc,path:[r.index,'title'],value:'draft'}]);assert.equal(await a.api.deleteBackup('edit',r.historyUid,versions[2].id),true);expected.delete(versions[2].id);
- const saved=await a.ctx.ViewerStorage.zip(await disk.file('data.zip').getFile(),disk.file('data.zip')),b=setup();await b.api.loadEntries(saved.entries,null,saved.source);const row=b.api.state.records[0];assert.equal(row.raw.title,'E');assert.equal(r.raw.title,'draft');assert.equal(a.api.unsaved(),true);assert.equal([...b.api.state.entries.keys()].filter(Store.managed).length,3);for(const [id,value]of expected)assert.equal(b.api.journal.target(row.historyUid,id),value);
+ const saved=await a.ctx.ViewerStorage.zip(await disk.file('data.zip').getFile(),disk.file('data.zip')),b=setup({editing:true});await b.api.loadEntries(saved.entries,null,saved.source);const row=b.api.state.records[0];assert.equal(row.raw.title,'E');assert.equal(r.raw.title,'draft');assert.equal(a.api.unsaved(),true);assert.equal([...b.api.state.entries.keys()].filter(Store.managed).length,3);for(const [id,value]of expected)assert.equal(b.api.journal.target(row.historyUid,id),value);
 });
 
 test('deleting the latest tombstone checkpoint keeps deleted metadata restorable after reopen',async()=>{
- const disk=memoryFS({'conversations.json':raw}),a=setup(),r=await openUI(a,disk),uid=r.historyUid;
+ const disk=memoryFS({'conversations.json':raw}),a=setup({editing:true}),r=await openUI(a,disk),uid=r.historyUid;
  for(const title of ['B','C','D']){a.api.commit([{doc:r.doc,path:[r.index,'title'],value:title}]);await a.api.saveWorkspace()}
  a.api.deleteRecords([r.key]);assert.equal(await a.api.saveWorkspace(),true);const versions=a.api.journal.data.records[uid].versions,expected=new Map(Array.from(versions,v=>[v.id,a.api.journal.target(uid,v.id)])),removed=versions.at(-1).id;
  // Deleting a conversation also records the list order in its save batch.
  // Removing the content checkpoint must preserve that independent order event.
  assert.equal(await a.api.deleteBackup('edit',uid,removed),true);expected.delete(removed);assert.equal([...a.api.state.entries.keys()].filter(Store.managed).length,4);
- const b=setup();await openUI(b,disk);assert.equal(b.api.journal.data.records[uid].present,false);assert.ok(expected.has(b.api.journal.data.records[uid].deleted.version));for(const [id,value]of expected)assert.equal(b.api.journal.target(uid,id),value);
+ const b=setup({editing:true});await openUI(b,disk);assert.equal(b.api.journal.data.records[uid].present,false);assert.ok(expected.has(b.api.journal.data.records[uid].deleted.version));for(const [id,value]of expected)assert.equal(b.api.journal.target(uid,id),value);
  await b.api.restoreBackup('deleted',uid,null);assert.equal(b.api.state.records.find(r=>r.historyUid===uid).raw.title,'C');
 });
 
 test('permanently removing one deleted conversation retains shared batches and every other conversation version',async()=>{
- const disk=memoryFS({'conversations.json':raw}),a=setup(),r=await openUI(a,disk),other=a.api.state.records[1];
+ const disk=memoryFS({'conversations.json':raw}),a=setup({editing:true}),r=await openUI(a,disk),other=a.api.state.records[1];
  for(let i=0;i<4;i++){a.api.commit([{doc:r.doc,path:[r.index,'title'],value:'one '+i},{doc:other.doc,path:[other.index,'title'],value:'two '+i}]);await a.api.saveWorkspace()}
  const expected=new Map(Array.from(a.api.journal.data.records[other.historyUid].versions,v=>[v.id,a.api.journal.target(other.historyUid,v.id)]));a.api.deleteRecords([r.key]);await a.api.saveWorkspace();assert.equal(await a.api.deleteBackup('deleted',r.historyUid,null),true);
- const b=setup();await openUI(b,disk);assert.equal(b.api.journal.data.records[r.historyUid],undefined);assert.ok([...b.api.state.entries.keys()].filter(Store.managed).length>=4);for(const [id,value]of expected)assert.equal(b.api.journal.target(other.historyUid,id),value);
+ const b=setup({editing:true});await openUI(b,disk);assert.equal(b.api.journal.data.records[r.historyUid],undefined);assert.ok([...b.api.state.entries.keys()].filter(Store.managed).length>=4);for(const [id,value]of expected)assert.equal(b.api.journal.target(other.historyUid,id),value);
  for(const e of b.api.state.entries.values())if(Store.managed(e.path))assert.equal(Object.hasOwn(JSON.parse(await e.blob.text()).changes.records,r.historyUid),false);
 });

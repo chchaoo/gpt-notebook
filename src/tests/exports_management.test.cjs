@@ -27,21 +27,21 @@ test('separate title files handle duplicates and Windows reserved names',async()
  assert.equal(E.filename('CON'),'_CON');assert.equal(E.filename('a/b:c?'),'a_b_c_');
 });
 test('deletion is undoable and removes conversations from saved JSON and chat HTML',async()=>{
- const a=setup(),rows=await load(a),removed=rows.find(r=>r.id==='b');
+ const a=setup({editing:true}),rows=await load(a),removed=rows.find(r=>r.id==='b');
  a.api.deleteRecords([removed.key]);assert.equal(a.api.orderedRecords().length,1);assert.equal(a.api.unsaved(),true);
  let files=await unzip(await a.api.workspaceArchive());assert.equal(JSON.parse(files.get('conversations.json')).length,1);assert.ok(!files.get('chat.html').toString().includes('PRIVATE-B-EXCLUDE'));
  a.api.historyEdit('undo');assert.equal(a.api.orderedRecords().length,2);
  a.api.historyEdit('redo');assert.equal(a.api.orderedRecords().length,1);
 });
 test('manual order is a sidecar setting and leaves original JSON and timestamps untouched',async()=>{
- const a=setup(),rows=await load(a),first=rows[0],second=rows[1],before=C.serialize(first.doc);
+ const a=setup({editing:true}),rows=await load(a),first=rows[0],second=rows[1],before=C.serialize(first.doc);
  a.api.moveRecord(second.key,first.key);assert.equal(a.api.orderedRecords()[0].key,second.key);assert.equal(C.serialize(first.doc),before);
  const files=await unzip(await a.api.workspaceArchive()),settings=JSON.parse(files.get('.viewer-state/viewer-settings.json'));
  assert.equal(settings.sort,'manual');assert.equal(settings.order[0].id,second.id);assert.equal(files.get('conversations.json').toString(),raw);
- const b=setup();await b.api.loadEntries([...files].map(([path,blob])=>({path,blob:new Blob([blob])})));assert.equal(b.api.orderedRecords()[0].id,second.id);
+ const b=setup({editing:true});await b.api.loadEntries([...files].map(([path,blob])=>({path,blob:new Blob([blob])})));assert.equal(b.api.orderedRecords()[0].id,second.id);
 });
 test('UI export dialog uses current unsaved draft for combined and separate HTML',async()=>{
- const a=setup(),rows=await load(a),r=rows.find(r=>r.id==='a');a.api.commit([{doc:r.doc,path:[r.index,'title'],value:'new unsaved'}]);
+ const a=setup({editing:true}),rows=await load(a),r=rows.find(r=>r.id==='a');a.api.commit([{doc:r.doc,path:[r.index,'title'],value:'new unsaved'}]);
  a.api.openExport([r.key]);a.document.getElementById('export-format').value='html';a.document.getElementById('export-layout').value='combined';a.document.getElementById('export-name').value='自定名称';
  await a.api.exportSelection();assert.equal(a.downloads[0].name,'自定名称.html');const html=await a.downloads[0].blob.text();assert.ok(html.includes('new unsaved'));assert.ok(!html.includes('PRIVATE-B-EXCLUDE'));
  a.api.openExport(rows.map(r=>r.key));a.document.getElementById('export-layout').value='separate';await a.api.exportSelection();const files=await unzip(a.downloads[1].blob);assert.equal(files.size,2);assert.ok(files.has('new unsaved.html'));

@@ -3,7 +3,7 @@ const {setup}=require('./dom_checks.cjs'),{memoryFS}=require('./memory_fs.cjs'),
 const raw=JSON.stringify([{id:'one',title:'A',mapping:{}},{id:'two',title:'Other',mapping:{}}]);
 async function open(a,fs){const x=await a.ctx.ViewerStorage.directory(fs.root);await a.api.loadEntries(x.entries,null,x.source);return a.api.state.records.find(r=>r.id==='one')}
 function edit(a,r,value){a.api.commit([{doc:r.doc,path:[r.index,'title'],value}])}
-async function seed(values=['B','C','D']){const a=setup(),fs=memoryFS({'conversations.json':raw}),r=await open(a,fs);for(const value of values){edit(a,r,value);await a.api.saveWorkspace()}return {a,fs,r,v:a.api.journal.data.records[r.historyUid].versions}}
+async function seed(values=['B','C','D']){const a=setup({editing:true}),fs=memoryFS({'conversations.json':raw}),r=await open(a,fs);for(const value of values){edit(a,r,value);await a.api.saveWorkspace()}return {a,fs,r,v:a.api.journal.data.records[r.historyUid].versions}}
 const cursor=a=>a.document.querySelector('.backup-position');
 
 test('latest position appears before history without creating or changing any persistent records',async()=>{
@@ -20,7 +20,7 @@ test('editing, undoing and redoing a restored draft keeps the marker truthful, i
 });
 
 test('saving a restoration creates a new saved position, keeps old batches, and reopens at that saved head',async()=>{
- const {a,fs,r,v}=await seed(),old=new Map([...fs.files].filter(([p])=>Store.managed(p)));await a.api.restoreBackup('edit',r.historyUid,v[1].id);await a.api.saveWorkspace();await a.api.showBackups('edit',r.historyUid);assert.equal(cursor(a).dataset.location,'latest');assert.ok(cursor(a).textContent.includes('最新保存版本 #5'));for(const [p,blob]of old)assert.equal(fs.files.get(p),blob);const b=setup(),row=await open(b,fs);await b.api.showBackups('edit',row.historyUid);assert.equal(row.raw.title,'B');assert.equal(cursor(b).dataset.location,'latest');assert.ok(cursor(b).textContent.includes('与磁盘一致'));
+ const {a,fs,r,v}=await seed(),old=new Map([...fs.files].filter(([p])=>Store.managed(p)));await a.api.restoreBackup('edit',r.historyUid,v[1].id);await a.api.saveWorkspace();await a.api.showBackups('edit',r.historyUid);assert.equal(cursor(a).dataset.location,'latest');assert.ok(cursor(a).textContent.includes('最新保存版本 #5'));for(const [p,blob]of old)assert.equal(fs.files.get(p),blob);const b=setup({editing:true}),row=await open(b,fs);await b.api.showBackups('edit',row.historyUid);assert.equal(row.raw.title,'B');assert.equal(cursor(b).dataset.location,'latest');assert.ok(cursor(b).textContent.includes('与磁盘一致'));
 });
 
 test('when identical content exists at several points, the explicitly restored point takes precedence',async()=>{

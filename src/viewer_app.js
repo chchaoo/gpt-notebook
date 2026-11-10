@@ -9,12 +9,38 @@
   let turnOutline=null, audit=null;
   const journal=typeof ViewerJournal!=='undefined'?ViewerJournal.create():null;
   const historyStore=ViewerJournalStore.create();
-  const editBlocked=()=>state.busy&&!state.saving;
+  const editBlocked=()=>!state.editMode||state.modeChanging||state.busy&&!state.saving;
+  const metadataPath=path=>path.startsWith('.viewer-state/')||path.startsWith('.viewer-backups/');
+  const settingsPath='.viewer-state/viewer-settings.json';
+  const modeHint='若要进行操作，请打开编辑模式';
+  const enableControls=(el,blocked,label='')=>{
+    el.disabled=blocked;
+    I.setAttribute(el,'title',!state.editMode&&blocked?modeHint:label);
+  };
+  function updateEditControls(){
+    const enabled=state.editMode&&!state.modeChanging,record=current();
+    for(const id of ['edit-mode','menu-mode']){
+      const el=$(id);el.setAttribute('aria-checked',String(enabled));el.disabled=!state.docs.length||state.busy||state.modeChanging||state.downloadPending;
+    }
+    $('menu-star').setAttribute('aria-checked',String(Boolean(record&&state.stars.has(record.key))));
+    for(const id of ['menu-title','menu-star','edit-title'])enableControls($(id),editBlocked()||!record||(id!=='menu-star'&&typeof record.raw.title!=='string'),id==='menu-star'?'星标当前会话':'编辑当前标题');
+    for(const id of ['menu-import','selection-import'])enableControls($(id),editBlocked()||state.busy||!state.docs.length,'增量导入');
+    for(const direction of ['undo','redo']){
+      const label=direction==='undo'?'撤销':'重做';
+      for(const id of [direction,'menu-'+direction])enableControls($(id),!state[direction].length||editBlocked(),label);
+      I.setAttribute($(direction+'-menu').querySelector('summary'),'title',!state.editMode?modeHint:(direction==='undo'?'选择撤销步数':'选择重做步数'));
+    }
+    for(const el of document.querySelectorAll('.message-edit'))enableControls(el,editBlocked(),'编辑');
+    for(const el of document.querySelectorAll('.conversation-star'))enableControls(el,editBlocked(),el.getAttribute('aria-pressed')==='true'?'取消星标':'添加星标');
+    for(const el of document.querySelectorAll('.conversation-delete'))enableControls(el,editBlocked(),'删除本条聊天');
+    const manual=$('sort-order').querySelector('[value="manual"]');enableControls(manual,!state.editMode,'手动顺序');
+  }
+  const displaySort=()=>!state.editMode&&state.viewSort?state.viewSort:state.sort;
   let editorChanged=()=>false;
   const state = { docs: [], entries: new Map(), resources: new Map(), records: [], current: null,
     branches: new Map(), urls: new Set(), undo: [], redo: [], token: 0, loadToken: 0, busy: false, saving:false,
     opened: new Set(), limits: new Map(), queryToken: 0, cache: new Map(), notices: [], search:{query:'',hits:[],cursor:-1}, userScroll:0,savedSign:'',fileHandle:null,
-    deleted:new Set(),selected:new Set(),multi:false,order:[],sort:'updated',orderModified:false,exportKeys:[],source:null,closeAfterSave:false };
+    editMode:false,modeChanging:false,viewSort:null,stars:new Set(),addedEntries:new Map(),importDocs:new Set(),deleted:new Set(),selected:new Set(),multi:false,order:[],sort:'updated',orderModified:false,exportKeys:[],source:null,closeAfterSave:false };
   const text = (tag, value, cls) => { const el = document.createElement(tag); el.textContent = value; if (cls) el.className = cls; return el; };
   const uiText=(tag,value,cls)=>{const el=text(tag,'',cls);I.setText(el,value);return el};
   const button = (label, action, cls) => { const el = text('button', I.t(label), cls);if(label)I.setText?.(el,label); el.type = 'button'; el.addEventListener('click', action); return el; };
@@ -62,34 +88,41 @@
   }
   function reset() {
     rememberReading();displayedReading=null;removeReadingRestore();
-    historyStore.reset();journal?.open([],[],null);state.journalProblem=null;state.structuralRevision=state.savedStructuralRevision=0;state.pendingJournal=null;state.backupTask=null;state.backupCleanupWarning=false;state.allowLegacyHistoryClear=false;
+    historyStore.reset();journal?.open([],[],null);state.journalProblem=null;state.structuralRevision=state.savedStructuralRevision=0;state.pendingJournal=null;state.downloadModeCheckpoint=null;state.backupTask=null;state.backupCleanupWarning=false;state.allowLegacyHistoryClear=false;
     state.historyFocusToken=(state.historyFocusToken||0)+1;
     turnOutline?.set(null,[]);
     state.token++; state.queryToken++; revoke();
     state.docs = []; state.entries.clear(); state.resources.clear(); state.records = [];
     state.printKeys=null;state.exportKeys=[];state.current = null; state.branches.clear(); state.undo = []; state.redo = []; state.opened.clear(); state.limits.clear(); state.cache.clear(); state.notices = [];
     state.search={query:'',hits:[],cursor:-1};state.listLimit=200;updateSearchPosition();
-    state.deleted.clear();state.selected.clear();state.multi=false;state.order=[];state.sort='updated';state.orderModified=false;updateSelection();
+    state.editMode=false;state.modeChanging=false;state.viewSort=null;state.stars.clear();state.addedEntries.clear();state.importDocs.clear();state.deleted.clear();state.selected.clear();state.multi=false;state.order=[];state.sort='updated';state.orderModified=false;updateSelection();
     state.savedFileEdits=new Map();state.inputTexts=new Map();state.downloadFiles=null;state.downloadHistory=null;state.downloadJournal=null;state.downloadRevision=0;
     state.selectionAnchor=null;audit?.reset();state.downloadAudit=null;state.source=null;state.fileHandle=null;state.savedSign='';state.downloadPending=false;state.downloadSign='';updateSourceInfo();
   }
-  const dirty = () => state.docs.reduce((n, doc) => n + doc.changes.size, 0)+state.deleted.size+(state.orderModified?1:0)+((state.structuralRevision||0)!==(state.savedStructuralRevision||0)?1:0);
-  const signature=()=>JSON.stringify({fields:state.docs.map(doc=>[doc.path,[...doc.changes].map(([k,v])=>[k,v.value]).sort((a,b)=>a[0].localeCompare(b[0]))]),deleted:[...state.deleted].sort(),order:state.order,sort:state.sort,structural:state.structuralRevision||0});
+  function effectiveDocuments(){
+    if(!state.importDocs.size)return state.docs;
+    const active=new Set(activeRecords().map(r=>r.doc.path));
+    return state.docs.filter(doc=>!state.importDocs.has(doc.path)||state.entries.has(doc.path)||active.has(doc.path));
+  }
+  const dirty = () => state.docs.reduce((n, doc) => n + doc.changes.size, 0)+state.deleted.size+effectiveDocuments().filter(doc=>state.importDocs.has(doc.path)&&!state.entries.has(doc.path)).length+(state.orderModified?1:0)+(state.editMode!==state.savedMode?1:0)+(JSON.stringify([...state.stars].sort())!==state.savedStars?1:0)+((state.structuralRevision||0)!==(state.savedStructuralRevision||0)?1:0);
+  const signature=()=>{
+    const docs=effectiveDocuments(),kept=new Set(docs),deletions=state.records.filter(r=>kept.has(r.doc)&&state.deleted.has(r.key)).map(r=>r.key);
+    return JSON.stringify({fields:docs.map(doc=>[doc.path,[...doc.changes].map(([k,v])=>[k,v.value]).sort((a,b)=>a[0].localeCompare(b[0]))]),deleted:deletions.sort(),order:state.order,sort:state.sort,editMode:state.editMode,stars:[...state.stars].sort(),structural:state.structuralRevision||0});
+  };
   const legacyControls=['viewer-history.json','viewer-settings.json','.viewer-backups/viewer-history.json','.viewer-backups/viewer-settings.json'];
   const statePath=path=>'.viewer-state/'+path.split('/').at(-1);
   const controlEntry=path=>state.entries.get(path)||state.entries.get('.viewer-backups/'+path.split('/').at(-1))||state.entries.get(path.split('/').at(-1));
   const needsMetadataMove=()=>legacyControls.some(path=>state.entries.has(path));
-  const unsaved=()=>Boolean(state.docs.length&&(signature()!==state.savedSign||state.downloadPending||journal?.dirty||needsMetadataMove()||editorChanged()));
+  const unsaved=()=>Boolean(state.docs.length&&(signature()!==state.savedSign||state.downloadPending||state.editMode&&(journal?.dirty||needsMetadataMove())||editorChanged()));
   function updateChanges() {
     $('changes').textContent = dirty() ? dirty() + ' 项改动 · '+(unsaved()?'草稿尚未保存':'已保存') : '原始数据未修改';
     $('document-state').textContent=unsaved()?'● 有未保存修改':'已保存 / 未修改';
     $('confirm-download').hidden=!state.downloadPending;
     updateBackupControls();if(!state.records.length)$('title').textContent=I.t('选择一个会话');
-    $('undo').disabled = !state.undo.length || editBlocked();
-    $('redo').disabled = !state.redo.length || editBlocked();
-    for(const id of ['quick-html','quick-markdown','quick-json','quick-pdf','quick-print','quick-directory','quick-zip'])$(id).disabled=!state.records.length||state.busy;
-    $('save-workspace').disabled=$('save-as-workspace').disabled=$('save-as-zip-workspace').disabled=!state.docs.length||state.busy;
-    for(const id of ['menu-save','menu-save-as-directory','menu-save-as-zip'])$(id).disabled=!state.docs.length||state.busy;
+    updateEditControls();
+    for(const id of ['quick-html','quick-markdown','quick-obsidian','quick-json','quick-pdf','quick-print','quick-directory','quick-zip'])$(id).disabled=!state.records.length||state.busy;
+    for(const id of ['save-workspace','menu-save'])enableControls($(id),!state.editMode||!state.docs.length||state.busy,'保存');
+    for(const id of ['save-as-workspace','save-as-zip-workspace','menu-save-as-directory','menu-save-as-zip'])$(id).disabled=!state.docs.length||state.busy;
     $('undo-menu').classList.toggle('disabled',!state.undo.length||editBlocked());$('redo-menu').classList.toggle('disabled',!state.redo.length||editBlocked());renderHistoryMenus();if($('history-dialog').open)showChanges(true);
   }
   let progressStage='',progressAt=0,progressHideTimer,progressShownAt=0;
@@ -104,14 +137,11 @@
   function setBusy(value) {
     state.busy = value;if(!value)endZipProgress();
     $('new-folder').disabled = value;
-    const record = current();
-    $('edit-title').disabled = editBlocked() || !record || typeof record.raw.title !== 'string';
-    for (const el of document.querySelectorAll('.message-edit')) el.disabled = editBlocked();
     updateChanges();updateSelection();
   }
   function title(record) { return typeof record.raw.title === 'string' && record.raw.title ? record.raw.title : I.t('(无标题)'); }
   function commit(edits,allowBusy=false) {
-    if (editBlocked()&&!allowBusy) return;
+    if (!state.editMode||editBlocked()&&!allowBusy) return;
     const tx = edits.filter(e => C.get(e.doc.data, e.path) !== e.value).map(e => ({ ...e, before: C.get(e.doc.data, e.path) }));
     if (!tx.length) return;
     for (const edit of tx) C.change(edit.doc, edit.path, edit.value);
@@ -124,6 +154,10 @@
       if(tx.kind==='workspace'){
         const before=state.records.find(r=>r.key===tx.target&&!state.deleted.has(r.key)),raw=before?journal?.rowRaw?.(before):null;applyWorkspace(direction==='undo'?tx.before:tx.after);const after=state.records.find(r=>r.key===tx.target&&!state.deleted.has(r.key));if(before||after)journal?.recordRaw?.(after||before,raw,after?journal.rowRaw(after):null);
       }else if(tx.kind==='delete'){for(const key of tx.keys){const r=state.records.find(r=>r.key===key);if(direction==='undo'){state.deleted.delete(key);if(r)journal?.recordRaw?.(r,null,journal.rowRaw(r))}else{if(r)journal?.recordRaw?.(r,journal.rowRaw(r),null);state.deleted.add(key)}}}
+      else if(tx.kind==='star'){const starred=direction==='undo'?!tx.starred:tx.starred;starred?state.stars.add(tx.target):state.stars.delete(tx.target)}
+      else if(tx.kind==='import'){
+        for(const key of tx.keys){const r=state.records.find(row=>row.key===key);if(direction==='undo'){journal?.recordRaw(r,journal.rowRaw(r),null);state.deleted.add(key)}else{state.deleted.delete(key);journal?.recordRaw(r,null,journal.rowRaw(r))}}
+      }
       else if(tx.kind==='order'){const before=orderState();state.order=[...(direction==='undo'?tx.before:tx.after)];state.orderModified=direction==='undo'?tx.wasModified:true;state.sort=(direction==='undo'?tx.beforeSort:tx.afterSort)||'manual';$('sort-order').value=state.sort;journal?.recordOrder?.(before,orderState())}
       else{const edits=[];for(const edit of tx){const before=C.get(edit.doc.data,edit.path),value=direction==='undo'?edit.before:edit.value;C.change(edit.doc,edit.path,value);edits.push({...edit,before,value})}journal?.recordFields?.(edits,state.records)}
       state[direction==='undo'?'redo':'undo'].push(tx);
@@ -134,7 +168,7 @@
   }
   function historyLabel(tx){
     if(tx.kind==='delete')return I.t('删除会话')+' · '+tx.keys.length;
-    if(tx.kind==='order')return I.t('调整会话顺序');if(tx.kind==='workspace')return I.t('恢复会话');
+    if(tx.kind==='star')return I.t(tx.starred?'添加星标':'取消星标');if(tx.kind==='import')return I.t('增量导入')+' · '+tx.keys.length;if(tx.kind==='order')return I.t('调整会话顺序');if(tx.kind==='workspace')return I.t('恢复会话');
     const edit=tx[0],r=state.records.find(r=>r.doc===edit?.doc&&r.index===edit?.path[0]);return I.t(edit?.path[1]==='title'?'修改标题':'修改消息')+' · '+(r?.raw.title||edit?.doc.path||'')+(tx.length>1?' ('+tx.length+')':'');
   }
   function renderHistoryMenus(){
@@ -361,7 +395,7 @@
     header.append(text('span', ({user:'你',assistant:'助手',tool:'工具',system:'系统',developer:'系统',function:'工具'})[info.role] || info.role));
     const ts = format(message.create_time); if (ts){const time=text('time',ts);time.dataset.timestamp=message.create_time;header.append(time);}
     const fields = C.editable(message);
-    if (fields.length) { const edit = button('编辑', () => editMessage(record, id, message), 'message-edit'); edit.disabled = editBlocked(); header.append(edit); }
+    if (fields.length) { const edit = button('编辑', () => editMessage(record, id, message), 'message-edit'); enableControls(edit,editBlocked(),'编辑'); header.append(edit); }
     panel.append(header);
     const body = text('div', '', 'msg-content');
     if (info.thought || info.tool) {
@@ -384,36 +418,41 @@
   }
   const current = () => state.records.find(r => r.key === state.current);
   const activeRecords=()=>state.records.filter(r=>!state.deleted.has(r.key));
-  function orderedRecords(){
-    const rows=activeRecords(),rank=new Map(state.order.map((key,i)=>[key,i]));
+  function orderedRecords(view=true){
+    const sort=view?displaySort():state.sort,rows=activeRecords(),rank=new Map(state.order.map((key,i)=>[key,i]));
     return rows.sort((a,b)=>{
-      if(state.sort==='manual')return (rank.get(a.key)??1e9)-(rank.get(b.key)??1e9);
-      if(state.sort==='title')return TitleIndex.compare(title(a),title(b))||a.key.localeCompare(b.key);
-      const time=r=>C.timestamp(state.sort==='updated'?r.raw.update_time||r.raw.create_time:r.raw.create_time);
-      return state.sort==='oldest'?time(a)-time(b):time(b)-time(a);
+      if(sort==='manual')return (rank.get(a.key)??1e9)-(rank.get(b.key)??1e9);
+      if(sort==='title')return TitleIndex.compare(title(a),title(b))||a.key.localeCompare(b.key);
+      const time=r=>C.timestamp(sort==='updated'?r.raw.update_time||r.raw.create_time:r.raw.create_time);
+      return sort==='oldest'?time(a)-time(b):time(b)-time(a);
     });
   }
   function updateSelection(){
     $('multi-toggle').dataset.enterLabel=I.t('多选');$('multi-toggle').dataset.exitLabel=I.t('退出多选');
     $('selection-tools').hidden=false;$('multi-toggle').textContent=state.multi?'退出多选':'多选';
     $('selection-count').hidden=!state.multi;$('selection-count').textContent='已选 '+state.selected.size+' 项';
-    $('selection-export').disabled=!state.selected.size||state.busy;$('selection-delete').disabled=!state.selected.size||editBlocked();
-    $('select-invert').disabled=!(state.visibleKeys||[]).length||editBlocked();$('select-none').disabled=!state.selected.size||editBlocked();$('select-visible').disabled=!state.records.length||editBlocked();
+    $('selection-export').disabled=!state.selected.size||state.busy;enableControls($('selection-delete'),!state.selected.size||editBlocked(),'删除所选');
+    $('select-invert').disabled=!(state.visibleKeys||[]).length||state.busy;$('select-none').disabled=!state.selected.size||state.busy;$('select-visible').disabled=!state.records.length||state.busy;
   }
   function selectRange(key,checked,range=false){
-    if(editBlocked())return;const visible=state.visibleKeys||[],start=visible.indexOf(state.selectionAnchor),end=visible.indexOf(key);
+    if(state.busy)return;const visible=state.visibleKeys||[],start=visible.indexOf(state.selectionAnchor),end=visible.indexOf(key);
     const keys=range&&start>=0&&end>=0?visible.slice(Math.min(start,end),Math.max(start,end)+1):[key];
     for(const item of keys)checked?state.selected.add(item):state.selected.delete(item);
     if(!range||start<0)state.selectionAnchor=key;updateSelection();renderList();
   }
   function deleteRecords(keys,allowBusy=false){
-    if(editBlocked()&&!allowBusy)return;
+    if(!state.editMode||editBlocked()&&!allowBusy)return;
     keys=[...new Set(keys)].filter(key=>!state.deleted.has(key));if(!keys.length)return;
     // Reversible draft deletion needs no second confirmation; permanent history deletion still does.
     for(const key of keys){const r=state.records.find(r=>r.key===key);if(r)journal?.recordRaw?.(r,journal.rowRaw(r),null);state.deleted.add(key)}
     state.undo.push(audit.track({kind:'delete',keys}));state.redo=[];state.selected.clear();state.search.query=null;
     if(state.deleted.has(state.current))state.current=activeRecords()[0]?.key||null;
     updateSelection();updateChanges();renderList();renderCurrent();
+  }
+  function toggleStar(key){
+    if(editBlocked()||!key||state.deleted.has(key))return;
+    const starred=!state.stars.has(key);starred?state.stars.add(key):state.stars.delete(key);
+    state.undo.push(audit.track({kind:'star',target:key,starred}));state.redo=[];updateChanges();renderList();
   }
   function moveRecord(from,to){
     if(editBlocked())return;
@@ -440,7 +479,7 @@
     }):savedReading?.anchor||null;
     const scrollGuard=state.userScroll;
     $('title').textContent = title(record); $('meta').textContent = format(record.raw.update_time || record.raw.create_time);
-    $('edit-title').disabled = editBlocked() || typeof record.raw.title !== 'string';
+    updateEditControls();
     const branch = C.branch(record.raw, state.branches.get(record.key));
     const select = $('branch'); select.replaceChildren();
     const choices = [...new Set([branch.leaf === '__all__' ? record.raw.current_node : branch.leaf, ...branch.leaves])].filter(Boolean);
@@ -507,18 +546,18 @@
       if (i % 20 === 19) { await yieldUI(); if (token !== state.queryToken) return; }
     }
     if (token !== state.queryToken) return;
-    state.visibleKeys=matching.map(r=>r.key);$('select-invert').disabled=!matching.length||editBlocked();$('sort-order').value=state.sort;
+    state.visibleKeys=matching.map(r=>r.key);$('select-invert').disabled=!matching.length||state.busy;$('sort-order').value=displaySort();
     const list = $('conv-list'); list.replaceChildren(); let group;
     // Render a bounded first page. The explicit button works without observers.
     let count = 0;
     const append = () => {
       const fragment = document.createDocumentFragment(), end = Math.min(count + (state.listLimit||200), matching.length);
       for (; count < end; count++) {
-        const record = matching[count], g = state.sort==='title'?TitleIndex.info(title(record)).group:groupKey(state.sort==='updated'?record.raw.update_time||record.raw.create_time:record.raw.create_time);
-        if (['updated','created','oldest','title'].includes(state.sort)&&g !== group) { group = g;const heading=text('div',g,'conv-group-title');if(state.sort==='title'){heading.dataset.letter=g;heading.tabIndex=-1}fragment.append(heading); }
+        const record = matching[count], g = displaySort()==='title'?TitleIndex.info(title(record)).group:groupKey(displaySort()==='updated'?record.raw.update_time||record.raw.create_time:record.raw.create_time);
+        if (['updated','created','oldest','title'].includes(displaySort())&&g !== group) { group = g;const heading=text('div',g,'conv-group-title');if(displaySort()==='title'){heading.dataset.letter=g;heading.tabIndex=-1}fragment.append(heading); }
         const row=text('div','','conv-row');
         if(state.multi){const hit=text('label','','selection-hit'),check=document.createElement('input');check.type='checkbox';check.checked=state.selected.has(record.key);check.setAttribute('aria-label','选择 '+title(record));hit.append(check);hit.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();selectRange(record.key,!state.selected.has(record.key),event.shiftKey)});check.addEventListener('keydown',event=>{if(event.key===' '){event.preventDefault();selectRange(record.key,!state.selected.has(record.key),event.shiftKey)}});row.append(hit)}
-        if(state.sort==='manual'){
+        if(state.editMode&&displaySort()==='manual'){
           const grip=button('⠿',()=>{},'drag-grip');grip.draggable=true;I.setAttribute(grip,'title','拖动调整显示顺序，不改变聊天日期');grip.addEventListener('dragstart',event=>{event.dataTransfer.setData('application/x-viewer-record',record.key);event.dataTransfer.effectAllowed='move';event.stopPropagation()});row.append(grip);
           row.addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('application/x-viewer-record')){event.preventDefault();event.stopPropagation()}});
           row.addEventListener('drop',event=>{const from=event.dataTransfer.getData('application/x-viewer-record');if(from){event.preventDefault();event.stopPropagation();moveRecord(from,record.key)}});
@@ -526,9 +565,11 @@
         const item = button('', () => selectRecord(record.key), 'conv-item' + (record.key === state.current ? ' active' : ''));
         const titleNode=text('span',title(record),'conv-title');item.append(titleNode);if(q)N.highlight(titleNode,q,options);
         item.dataset.key = record.key; item.title = title(record) + '\n' + record.doc.path;row.append(item);
-        if(journal?.has(record.historyUid)){const versions=button('',()=>showBackups('edit',record.historyUid),'conversation-history icon-button');versions.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 0 5M4 4v6h6m2-3v5l3 2"/></svg>';versions.title=I.t('恢复会话版本');versions.setAttribute('aria-label',I.t('恢复会话版本'));row.append(versions)}
+        if(state.editMode&&journal?.has(record.historyUid)){const versions=button('',()=>showBackups('edit',record.historyUid),'conversation-history icon-button');versions.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 0 5M4 4v6h6m2-3v5l3 2"/></svg>';versions.title=I.t('恢复会话版本');versions.setAttribute('aria-label',I.t('恢复会话版本'));row.append(versions)}
+        const starred=state.stars.has(record.key),star=button('',()=>toggleStar(record.key),'conversation-star icon-button');
+        star.textContent=starred?'★':'☆';star.setAttribute('aria-pressed',String(starred));I.setAttribute(star,'aria-label',starred?'取消星标':'添加星标');enableControls(star,editBlocked(),starred?'取消星标':'添加星标');row.append(star);
         const menu=document.createElement('details');menu.className='conversation-menu';const summary=text('summary','⋯');I.setAttribute(summary,'aria-label','聊天操作：'+title(record));menu.append(summary);
-        const actions=text('div','','conversation-popup');actions.append(button('导出本条聊天…',()=>{menu.open=false;openExport([record.key],'zip')}),button('删除本条聊天',()=>{menu.open=false;deleteRecords([record.key])}));menu.append(actions);row.append(menu);fragment.append(row);
+        const actions=text('div','','conversation-popup');const remove=button('删除本条聊天',()=>{menu.open=false;deleteRecords([record.key])},'conversation-delete');enableControls(remove,editBlocked(),'删除本条聊天');actions.append(button('导出本条聊天…',()=>{menu.open=false;openExport([record.key],'zip')}),remove);menu.append(actions);row.append(menu);fragment.append(row);
         menu.addEventListener('toggle',()=>{
           if(!menu.open)return;for(const other of $('conv-list').querySelectorAll('.conversation-menu'))if(other!==menu)other.open=false;
           if(typeof summary.getBoundingClientRect!=='function')return;
@@ -541,14 +582,14 @@
     append();
     const more = button('加载更多会话', () => { if (token !== state.queryToken) return; more.remove(); append();state.listLimit=count; if (count < matching.length) list.append(more); }, 'load-more');
     if (count < matching.length) list.append(more);
-    if(state.sort==='manual'){
+    if(state.editMode&&displaySort()==='manual'){
       const end=uiText('div', '拖到这里放在最后','drag-end');
       end.addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('application/x-viewer-record')){event.preventDefault();event.stopPropagation()}});
       end.addEventListener('drop',event=>{const from=event.dataTransfer.getData('application/x-viewer-record');if(from){event.preventDefault();event.stopPropagation();moveRecord(from,'__end__')}});list.append(end);
     }
     $('stats').textContent = q ? '匹配 ' + matching.length + ' / ' + activeRecords().length + ' 个会话' : '共 ' + activeRecords().length + ' 个会话';
-    const rail=$('alphabet-index');rail.replaceChildren();rail.hidden=state.sort!=='title';$('conv-list-wrap').classList.toggle('has-alphabet',state.sort==='title');
-    if(state.sort==='title'){
+    const rail=$('alphabet-index');rail.replaceChildren();rail.hidden=displaySort()!=='title';$('conv-list-wrap').classList.toggle('has-alphabet',displaySort()==='title');
+    if(displaySort()==='title'){
       const available=new Set(matching.map(r=>TitleIndex.info(title(r)).group));
       for(const letter of TitleIndex.letters){const item=button(letter,async()=>{
         const position=matching.findIndex(r=>TitleIndex.info(title(r)).group===letter);if(position<0)return;
@@ -664,9 +705,9 @@
     const mime = mimeByName(entry.path), type = /^image\//.test(mime) ? 3 : /^(audio|video)\//.test(mime) ? 2 : mime ? 1 : 0;
     return type * 10000 - entry.path.split('/').length;
   }
-  async function indexResources() {
+  async function indexResources(entries=state.entries,resources=state.resources) {
     const aliases = new Map(), mime = new Map();
-    for (const entry of state.entries.values()) {
+    for (const entry of entries.values()) {
       const basename = entry.path.split('/').pop();
       try {
         if (basename === 'conversation_asset_file_names.json') {
@@ -681,10 +722,10 @@
         }
       } catch (_) { state.notices.push(basename + ' 无法解析，附件将使用可用文件名'); }
     }
-    for (const entry of [...state.entries.values()].sort((a,b) => a.path.localeCompare(b.path))) {
+    for (const entry of [...entries.values()].sort((a,b) => a.path.localeCompare(b.path))) {
       const id = C.fid(entry.path.split('/').pop()); if (!id) continue;
-      const old = state.resources.get(id);
-      if (!old || entryPriority(entry) > entryPriority(old)) state.resources.set(id, { ...entry, name: aliases.get(id), mime: mime.get(id) });
+      const old = resources.get(id);
+      if (!old || entryPriority(entry) > entryPriority(old)) resources.set(id, { ...entry, name: aliases.get(id), mime: mime.get(id) });
     }
   }
   async function loadEntries(entries, sources, origin=null) {
@@ -721,14 +762,22 @@
           if (i % 30 === 29) await yieldUI();
         }
       }
-      if (!state.records.length&&!controlEntry('.viewer-state/viewer-history.json')) throw new Error('没有可用对话；源文件已保留，但没有有效的 mapping');
+      if (!state.records.length&&invalid&&!controlEntry('.viewer-state/viewer-history.json')) throw new Error('没有可用对话；源文件已保留，但没有有效的 mapping');
       if (invalid) state.notices.push(invalid + ' 条无效对话无法展示，导出副本仍保留原文');
       if (duplicates) state.notices.push(duplicates + ' 条重复会话 ID 已分别保留，避免合并时丢失不同版本');
       await indexResources();
-      const settings=controlEntry('.viewer-state/viewer-settings.json');
+      const settings=controlEntry(settingsPath);
+      // Older archives may have viewer metadata without an explicit mode.
+      // Treat them as editable until the user explicitly chooses to remove it.
+      state.editMode=Boolean(settings||controlEntry(ViewerJournalStore.path));
       if(settings)try{
         const saved=C.parse(await blobText(settings.blob));
         if(['updated','created','oldest','title','manual'].includes(saved.sort))state.sort=saved.sort;
+        if(typeof saved.editMode==='boolean')state.editMode=saved.editMode;
+        const refs=new Map(state.records.map(r=>[r.key,r]));
+        for(const ref of Array.isArray(saved.stars)?saved.stars:[])if(ref&&typeof ref.path==='string'&&Number.isInteger(ref.index)){
+          const key=ref.path+'::'+ref.index;if(refs.has(key))state.stars.add(key);
+        }
         const remaining=[...state.records];state.order=[];
         for(const ref of Array.isArray(saved.order)?saved.order:[]){const index=remaining.findIndex(r=>ref.path&&Number.isInteger(ref.index)?r.doc.path===ref.path&&r.index===ref.index:ref.id&&r.id===ref.id);if(index>=0)state.order.push(remaining.splice(index,1)[0].key)}
       }catch(_){state.notices.push('辅助排序设置无法解析，已使用日期排序')}
@@ -736,32 +785,120 @@
       state.records.sort((a,b) => C.timestamp(b.raw.update_time || b.raw.create_time) - C.timestamp(a.raw.update_time || a.raw.create_time) || a.key.localeCompare(b.key));
       $('loader').hidden = true; $('app').hidden = false; $('search').value = '';
       state.source=origin||await IO.readonly([...state.entries.values()]);
-      if(journal){const file=controlEntry('.viewer-state/viewer-history.json');try{const text=file?await blobText(file.blob):null;if(text!==null)state.inputTexts.set(file.path,text);const stored=await historyStore.open(state.entries,file);journal.open(state.records,orderedRecords().map(r=>r.key),stored,{sort:state.sort});historyStore.align(journal.data,journal.dirty);if(journal.needsClearConfirmation){const clear=confirm(I.t('旧资料已关闭记录但仍保留历史。确认将清空历史；取消则启用记录并保留历史。'));journal.setEnabled(!clear,backupSnapshot())}}catch(error){journal.open(state.records,orderedRecords().map(r=>r.key),null,{sort:state.sort});historyStore.align(journal.data,true);state.journalProblem=error.message;state.notices.push('历史文件无法解析，聊天原文仍可查看。')}}
-      state.savedFileEdits=fileEditState();state.savedSign=signature();state.fileHandle=null;audit.reset();updateSourceInfo();
+      if(journal){const file=controlEntry('.viewer-state/viewer-history.json');try{const text=file?await blobText(file.blob):null;if(text!==null)state.inputTexts.set(file.path,text);const stored=await historyStore.open(state.entries,file);journal.open(state.records,orderedRecords().map(r=>r.key),stored,{sort:state.sort});historyStore.align(journal.data,journal.dirty);if(state.editMode&&journal.needsClearConfirmation){const clear=confirm(I.t('旧资料已关闭记录但仍保留历史。确认将清空历史；取消则启用记录并保留历史。'));journal.setEnabled(!clear,backupSnapshot())}}catch(error){journal.open(state.records,orderedRecords().map(r=>r.key),null,{sort:state.sort});historyStore.align(journal.data,true);state.journalProblem=error.message;state.notices.push('历史文件无法解析，聊天原文仍可查看。')}}
+      state.savedFileEdits=fileEditState();markModeSaved();state.savedSign=signature();state.fileHandle=null;audit.reset();updateSourceInfo();
       notify('已加载 ' + state.records.length + ' 个会话；默认显示当前分支');
       await renderList(); await fromHash();
     } catch (error) { $('loader').hidden = false; $('app').hidden = true; notify(error.message, true); }
     finally { setBusy(false); }
   }
-  async function selectedFiles(fileList) {
-    if(state.busy)return;
-    const entries = Array.from(fileList).map(file => {
+  function directoryInputEntries(fileList){
+    return Array.from(fileList).map(file => {
       const relative = file.webkitRelativePath || file.name, parts = relative.split('/');
       return { path:parts.length > 1 ? parts.slice(1).join('/') : relative, blob:file };
     }).filter(entry=>!IO.hidden(entry.path));
+  }
+  async function selectedFiles(fileList) {
+    if(state.busy)return;
+    const entries=directoryInputEntries(fileList);
     try{const name=fileList[0]?.webkitRelativePath?.split('/')[0]||'';await loadEntries(entries,null,await IO.readonly(entries,name))}catch(error){notify('打开目录失败：'+error.message,true)}
   }
-  let backupUid=null;
-  function orderState(){return {order:orderedRecords().map(r=>r.historyUid||r.key),sort:state.sort}}
-  function backupSnapshot(){return journal.capture(activeRecords(),orderedRecords().map(r=>r.key),{sort:state.sort})}
-  function updateBackupControls(){
-    if(!journal)return;const enabled=journal.data.enabled!==false;
-    $('backup-toggle').setAttribute('aria-pressed',String(enabled));for(const attr of ['title','aria-label'])if(I.setAttribute)I.setAttribute($('backup-toggle'),attr,enabled?'关闭增量备份':'启用增量备份');$('backup-enabled').checked=enabled;$('backup-enabled').disabled=state.busy||!state.docs.length;for(const id of ['backup-clean-age','backup-clean-category','backup-clean-all'])$(id).disabled=state.busy||state.downloadPending;
-    $('backup-toggle').disabled=!state.docs.length||state.busy;if($('backup-dialog').open)renderBackups();
+  function openImport(){
+    if(editBlocked()||state.busy||!state.docs.length)return;
+    flushEditor();$('import-dialog').showModal();
   }
-  function canChangeBackups(){if(state.busy)return false;if(state.downloadPending){notify('请先确认下载副本已保存，再更改备份设置');return false}return true}
+  async function chooseImport(kind){
+    if(editBlocked()||state.busy||!state.docs.length)return;
+    $('import-dialog').close();
+    if(kind==='zip'&&typeof window.showOpenFilePicker!=='function'){$('import-zip-input').click();return}
+    if(kind==='directory'&&typeof window.showDirectoryPicker!=='function'){$('import-folder-input').click();return}
+    return runImport(async()=>{
+      if(kind==='directory')return (await IO.directory(await window.showDirectoryPicker({mode:'read'}))).entries;
+      const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'ZIP',accept:{'application/zip':['.zip']}}]});
+      return (await IO.zip(await handle.getFile(),null,zipProgress)).entries;
+    });
+  }
+  const fileIds=raw=>[...raw.matchAll(/(?:^|[^\w])(file[-_][A-Za-z0-9]{8,})(?=[^A-Za-z0-9]|$)/g)].map(m=>m[1]);
+  const rawIdentity=raw=>raw.replace(/"(?:\\[\s\S]|[^"\\])*"|\s+/g,token=>token[0]==='"'?token:'');
+  async function runImport(readEntries){
+    if(editBlocked()||state.busy||!state.docs.length)return false;
+    flushEditor();setBusy(true);zipProgress('增量导入',null);
+    try{
+      const incoming=new Map();
+      for(const e of await readEntries()){
+        if(IO.hidden(e.path)||metadataPath(e.path)||legacyControls.includes(e.path))continue;
+        if(!C.validPath(e.path)||incoming.has(e.path))throw new Error(I.t('文件路径无效')+' · '+e.path);
+        incoming.set(e.path,e);
+      }
+      const files=[...incoming.values()].filter(e=>C.conversationFile(e.path.split('/').at(-1))).sort((a,b)=>a.path.localeCompare(b.path));
+      if(!files.length)throw new Error(I.t('目录中没有 conversations.json 或 conversations-*.json'));
+      const texts=await Promise.all(files.map(e=>blobText(e.blob))),parsed=await parseOffThread(texts),currentRows=new Map(),knownRows=new Map();
+      const conversationId=row=>typeof (row.conversation_id||row.id)==='string'?row.conversation_id||row.id:'';
+      for(const r of activeRecords()){
+        if(!currentRows.has(r.id))currentRows.set(r.id,[]);
+        currentRows.get(r.id).push(r);
+      }
+      const selected=[];let duplicates=0;
+      for(let f=0;f<files.length;f++){
+        const doc=C.document(texts[f],parsed[f]),spans=C.spans(doc.text,new Set(doc.data.map((_,i)=>C.key([i]))));
+        for(const [i,row]of doc.data.entries()){
+          if(!C.object(row)||!C.object(row.mapping))continue;
+          const id=conversationId(row),raw=doc.text.slice(...spans.get(C.key([i]))),identity=rawIdentity(raw);
+          if(!knownRows.has(id))knownRows.set(id,new Set((currentRows.get(id)||[]).map(r=>rawIdentity(journal.rowRaw(r)))));
+          const known=knownRows.get(id);
+          if(known.has(identity)){duplicates++;continue}
+          known.add(identity);selected.push(raw);
+        }
+        await yieldUI();
+      }
+      if(!selected.length){notify(duplicates?'没有新的聊天可以导入。':'没有找到可导入的聊天。');return false}
+      const raw='[\n'+selected.join(',\n')+'\n]',doc=C.document(raw),occupied=new Set([...state.entries.keys(),...state.addedEntries.keys(),...state.docs.map(d=>d.path)].map(path=>path.toLowerCase()));
+      let suffix=1;while(occupied.has('conversations-import-'+suffix+'.json')||[...occupied].some(path=>path.startsWith('assets-import-'+suffix+'/')))suffix++;
+      doc.path='conversations-import-'+suffix+'.json';
+      const imported=doc.data.map((row,index)=>({raw:row,doc,index,id:conversationId(row),key:doc.path+'::'+index}));
+      const sourceResources=new Map(),newResources=new Map(),addedEntries=new Map(),aliases=[];
+      await indexResources(incoming,sourceResources);
+      const wanted=new Set(fileIds(raw));
+      for(const id of wanted){
+        const candidate=sourceResources.get(id);if(!candidate)continue;
+        const prior=state.resources.get(id);
+        if(prior){
+          if(await IO.digest(prior.blob)!==await IO.digest(candidate.blob))throw new Error(I.t('同一附件编号的内容不同，导入已停止。')+' '+id);
+          continue;
+        }
+        const basename=candidate.path.split('/').at(-1),path='assets-import-'+suffix+'/'+basename,entry={...candidate,path};
+        if(addedEntries.has(path))throw new Error(I.t('文件路径无效')+' · '+path);
+        addedEntries.set(path,entry);newResources.set(id,entry);
+        if(candidate.name||candidate.mime)aliases.push({file_id:id,file_name:candidate.name,mime_type:candidate.mime});
+      }
+      if(aliases.length){
+        const path='assets-import-'+suffix+'/library_files.json';
+        addedEntries.set(path,{path,blob:new Blob([JSON.stringify(aliases)],{type:'application/json'})});
+      }
+      // The archive, attachment conflicts, and exact source JSON were checked
+      // before adding any records to the live draft.
+      state.docs.push(doc);state.importDocs.add(doc.path);for(const row of imported)state.records.push(row);
+      for(const [path,entry]of addedEntries)state.addedEntries.set(path,entry);
+      for(const [id,entry]of newResources)state.resources.set(id,entry);
+      for(const r of imported)journal?.recordRaw(r,null,journal.rowRaw(r));
+      state.undo.push(audit.track({kind:'import',keys:imported.map(r=>r.key)}));state.redo=[];state.search.query=null;
+      state.current??=imported[0].key;await renderList();await renderCurrent(true);
+      notify(I.t('已导入到当前草稿')+' · '+imported.length+(duplicates?' · '+I.t('跳过重复聊天')+' '+duplicates:''));
+      return true;
+    }catch(error){if(error.name!=='AbortError')notify(I.t('导入失败：')+' '+error.message,true);return false}
+    finally{setBusy(false)}
+  }
+  let backupUid=null;
+  function orderState(){return {order:orderedRecords(false).map(r=>r.historyUid||r.key),sort:state.sort}}
+  function backupSnapshot(){return journal.capture(activeRecords(),orderedRecords(false).map(r=>r.key),{sort:state.sort})}
+  function updateBackupControls(){
+    if(!journal)return;const enabled=state.editMode&&journal.data.enabled!==false;
+    $('backup-toggle').setAttribute('aria-pressed',String(enabled));for(const attr of ['title','aria-label'])if(I.setAttribute)I.setAttribute($('backup-toggle'),attr,enabled?'关闭增量备份':'启用增量备份');$('backup-enabled').checked=enabled;enableControls($('backup-enabled'),!state.editMode||state.busy||!state.docs.length,'启用增量备份');for(const [id,label]of [['backup-clean-age','删除较早备份'],['backup-clean-category','删除此类别'],['backup-clean-all','删除全部增量备份'],['backup-manage','管理增量备份…'],['backup-deleted','恢复已删除会话…'],['backup-order','恢复会话顺序…']])enableControls($(id),!state.editMode||state.busy||state.downloadPending||!state.docs.length,label);I.setAttribute($('backup-enabled-label'),'title',state.editMode?'启用增量备份':modeHint);
+    enableControls($('backup-toggle'),!state.editMode||!state.docs.length||state.busy,enabled?'关闭增量备份':'启用增量备份');if($('backup-dialog').open)renderBackups();
+  }
+  function canChangeBackups(){if(!state.editMode||state.modeChanging||state.busy)return false;if(state.downloadPending){notify('请先确认下载副本已保存，再更改备份设置');return false}return true}
   async function showBackups(category='all',uid=null){
-    if(!journal||!state.docs.length)return;backupUid=uid;$('backup-category').value=category;closeMenus();renderBackups();if(!$('backup-dialog').open)$('backup-dialog').showModal();scrollBackupPosition();  }
+    if(!journal||!state.editMode||!state.docs.length)return;backupUid=uid;$('backup-category').value=category;closeMenus();renderBackups();if(!$('backup-dialog').open)$('backup-dialog').showModal();scrollBackupPosition();  }
   function scrollBackupPosition(uid=backupUid,kind=null){setTimeout(()=>{if(!$('backup-dialog').open)return;const category=$('backup-category').value,marker=[...$('backup-list').querySelectorAll('.backup-position')].find(el=>uid?el.dataset.uid===uid:kind==='order'||category==='order'?el.dataset.kind==='order':true);marker?.scrollIntoView?.({block:'nearest'})},0)}
   const backupClip=(value,limit=74)=>{const s=String(value??'').replace(/\s+/g,' ').trim();return s.length>limit?s.slice(0,limit)+'…':s||'∅'};
   function backupField(path,record){
@@ -927,7 +1064,7 @@
     const plan=historyStore.prepare(journal.data),original=new Map(state.entries),entries=new Map(original),removed=new Set(plan.removedPaths),rollback=new Map();
     for(const e of plan.entries)entries.set(e.path,e);for(const path of removed)entries.delete(path);await migrateControls(original,entries,removed,state.allowLegacyHistoryClear);
     if(plan.clearBackupFolder)for(const path of [...entries.keys()])if(path.startsWith('.viewer-backups/')){entries.delete(path);removed.add(path)}
-    const settingsPath='.viewer-state/viewer-settings.json';if(!entries.has(settingsPath))entries.set(settingsPath,{path:settingsPath,blob:new Blob([JSON.stringify({version:1,sort:'updated',order:[]})],{type:'application/json'})});
+    const settingsPath='.viewer-state/viewer-settings.json';if(!entries.has(settingsPath))entries.set(settingsPath,{path:settingsPath,blob:new Blob([JSON.stringify({version:1,editMode:true,sort:'updated',order:[]})],{type:'application/json'})});
     const output=[...entries.values()];output.removedPaths=removed;output.clearBackupFolder=plan.clearBackupFolder;output.changedPaths=new Set(output.filter(e=>original.get(e.path)?.blob!==e.blob).map(e=>e.path));
     for(const path of new Set([...removed,...output.changedPaths]))if(original.has(path)){let before=state.inputTexts.get(path);if(before===undefined)before=await blobText(original.get(path).blob);rollback.set(path,()=>new Blob([before],{type:original.get(path).blob.type||'application/json'}))}
     zipProgress('正在写入备份更改',null);let cleanupFailures=[];
@@ -946,39 +1083,96 @@
     if(C.object(value.logical_files)&&Object.keys(value.logical_files).some(owned))replace(['logical_files'],'{'+Object.keys(value.logical_files).filter(name=>!owned(name)).map(name=>JSON.stringify(name)+':'+raw.slice(...spans.get(C.key(['logical_files',name])))).join(',')+'}');
     for(const edit of replacements.sort((a,b)=>b.start-a.start))raw=raw.slice(0,edit.start)+edit.value+raw.slice(edit.end);return raw;
   }
+  function registerImportedFiles(raw,entries,documents){
+    if(!entries.length)return raw;
+    const manifest=C.parse(raw),spans=C.spans(raw,null),changes=[];
+    function append(path,items,length){
+      if(!items.length)return;
+      const [,end]=spans.get(C.key(path));changes.push({start:end-1,end:end-1,raw:(length?',':'')+items.join(',')});
+    }
+    if(Array.isArray(manifest.export_files)){
+      const seen=new Set(manifest.export_files.map(e=>e?.path));
+      append(['export_files'],entries.filter(e=>!seen.has(e.path)).map(e=>JSON.stringify({path:e.path,size_bytes:e.blob.size})),manifest.export_files.length);
+    }
+    const logical=manifest.logical_files;
+    if(C.object(logical)){
+      const conversations=entries.filter(e=>C.conversationFile(e.path.split('/').at(-1))).map(e=>e.path);
+      const paths=logical['conversations.json']?.files;
+      const extra=entries.filter(e=>!conversations.includes(e.path)&&!Object.hasOwn(logical,e.path)).map(e=>JSON.stringify(e.path)+':'+JSON.stringify({files:[e.path],sharded:false}));
+      if(Array.isArray(paths)){
+        append(['logical_files','conversations.json','files'],conversations.filter(path=>!paths.includes(path)).map(path=>JSON.stringify(path)),paths.length);
+        const flag=spans.get(C.key(['logical_files','conversations.json','sharded']));
+        if(conversations.length&&flag)changes.push({start:flag[0],end:flag[1],raw:'true'});
+      }else if(conversations.length&&!Object.hasOwn(logical,'conversations.json')){
+        extra.push('"conversations.json":'+JSON.stringify({files:documents.map(doc=>doc.path),sharded:documents.length>1}));
+      }
+      append(['logical_files'],extra,Object.keys(logical).length);
+    }
+    for(const change of changes.sort((a,b)=>b.start-a.start))raw=raw.slice(0,change.start)+change.raw+raw.slice(change.end);
+    return raw;
+  }
   async function workspaceEntries(){
     // Everything below this checkpoint is derived from the same synchronous snapshot.
-    const originalEntries=new Map(state.entries),entries=new Map(originalEntries),files=fileEditState(),rollback=new Map(),removedPaths=new Set(),raws=new Map(),docs=[...state.docs];let dataChanged=false;
+    const originalEntries=new Map(state.entries),entries=new Map(originalEntries),files=fileEditState(),rollback=new Map(),removedPaths=new Set(),raws=new Map(),docs=effectiveDocuments();let dataChanged=false;
     const checkpoint={sign:signature(),audit:audit.capture(),revision:state.structuralRevision||0};
+    const stagedPaths=new Set(),stagedFolders=new Set();
+    for(const r of activeRecords())if(state.importDocs.has(r.doc.path)){
+      for(const id of fileIds(journal.rowRaw(r))){
+        const path=state.resources.get(id)?.path;if(!state.addedEntries.has(path))continue;
+        stagedPaths.add(path);stagedFolders.add(path.split('/')[0]);
+      }
+    }
+    for(const [path,entry]of state.addedEntries)if(!entries.has(path)&&(stagedPaths.has(path)||stagedFolders.has(path.split('/')[0])&&path.endsWith('/library_files.json')))entries.set(path,entry);
     for(const doc of docs){const next=files.get(doc),saved=state.savedFileEdits?.get(doc);if(entries.has(doc.path)&&sameEdits(saved,next))continue;
       const raw=next.removed.size?'[\n'+doc.data.map((_,i)=>i).filter(i=>!next.removed.has(i)).map(i=>journal?journal.rowRaw({doc,index:i}):E.selectIndices(doc,[i]).slice(1,-1)).join(',\n')+'\n]':journal?journal.serializeDocument(doc):C.serialize(doc);
       raws.set(doc.path,raw);entries.set(doc.path,{path:doc.path,blob:new Blob([raw],{type:'application/json'})});dataChanged=true;
       const previous=[...state.savedFileEdits.values()].find(value=>value.doc.path===doc.path);if(previous)rollback.set(doc.path,()=>rebuildSavedFile(previous));
     }
-    const ordered=orderedRecords(),settings={version:1,sort:state.sort,order:ordered.map(r=>({id:r.id,path:r.doc.path,index:state.records.filter(other=>other.doc===r.doc&&other.index<r.index&&!state.deleted.has(other.key)).length}))};
-    entries.set('.viewer-state/viewer-settings.json',{path:'.viewer-state/viewer-settings.json',blob:new Blob([JSON.stringify(settings,null,2)],{type:'application/json'})});
-    if(journal){if(state.journalProblem)throw new Error('请先在备份管理中处理不可用历史，或导出资料副本');checkpoint.journal=journal.prepare(backupSnapshot());state.pendingJournal=checkpoint.journal;checkpoint.history=historyStore.prepare(checkpoint.journal.data);for(const e of checkpoint.history.entries)entries.set(e.path,e);for(const path of checkpoint.history.removedPaths){removedPaths.add(path);entries.delete(path)}}
-    let combined,frozenRecords;const resources=new Map(state.resources);
-    if(dataChanged&&[...entries.keys()].some(path=>path.split('/').pop()==='chat.html')){
-      const frozenDocs=new Map();for(const doc of docs){if(!raws.has(doc.path))raws.set(doc.path,journal?journal.serializeDocument(doc):C.serialize(doc));const index=new Map();let n=0;for(let i=0;i<doc.data.length;i++)if(!files.get(doc).removed.has(i))index.set(i,n++);frozenDocs.set(doc,{doc:{path:doc.path,text:raws.get(doc.path),changes:new Map()},index})}
-      combined=C.combineSources(docs.map(doc=>raws.get(doc.path)));frozenRecords=ordered.map(r=>({id:r.id,raw:{id:r.raw.id},doc:frozenDocs.get(r.doc).doc,index:frozenDocs.get(r.doc).index.get(r.index)}));
+    const ordered=orderedRecords(false),editMode=state.editMode,starred=new Set(state.stars);
+    const sort=state.sort;checkpoint.mode=editMode;checkpoint.stars=JSON.stringify([...starred].sort());
+    const refs=new Map(),byDoc=new Map();
+    for(const r of state.records){if(!byDoc.has(r.doc))byDoc.set(r.doc,new Map());byDoc.get(r.doc).set(r.index,r)}
+    for(const [doc,rows]of byDoc){let index=0;for(let i=0;i<doc.data.length;i++){
+      const row=rows.get(i);if(row&&state.deleted.has(row.key))continue;
+      if(row)refs.set(row.key,{id:row.id,path:doc.path,index});index++;
+    }}
+    if(editMode){
+      const settings={version:2,editMode:true,sort:state.sort,order:ordered.map(r=>refs.get(r.key)),stars:ordered.filter(r=>starred.has(r.key)).map(r=>refs.get(r.key))};
+      entries.set(settingsPath,{path:settingsPath,blob:new Blob([JSON.stringify(settings,null,2)],{type:'application/json'})});
     }
+    if(journal){
+      if(editMode&&state.journalProblem)throw new Error('请先在备份管理中处理不可用历史，或导出资料副本');
+      checkpoint.journal=journal.prepare(backupSnapshot());state.pendingJournal=checkpoint.journal;
+      if(editMode){
+        checkpoint.history=historyStore.prepare(checkpoint.journal.data);
+        for(const e of checkpoint.history.entries)entries.set(e.path,e);
+        for(const path of checkpoint.history.removedPaths){removedPaths.add(path);entries.delete(path)}
+      }
+    }
+    if(!editMode)for(const path of entries.keys())if(metadataPath(path)||legacyControls.includes(path)){entries.delete(path);removedPaths.add(path)}
+    let combined,frozenRecords;const resources=new Map(state.resources);
+    const updateChat=dataChanged||editMode!==state.savedMode||checkpoint.stars!==state.savedStars;
+    if(updateChat&&[...entries.keys()].some(path=>path.split('/').pop()==='chat.html')){
+      const frozenDocs=new Map();for(const doc of docs){if(!raws.has(doc.path))raws.set(doc.path,journal?journal.serializeDocument(doc):C.serialize(doc));const index=new Map();let n=0;for(let i=0;i<doc.data.length;i++)if(!files.get(doc).removed.has(i))index.set(i,n++);frozenDocs.set(doc,{doc:{path:doc.path,text:raws.get(doc.path),changes:new Map()},index})}
+      combined=C.combineSources(docs.map(doc=>raws.get(doc.path)));frozenRecords=ordered.map(r=>({id:r.id,key:r.key,raw:{id:r.raw.id},doc:frozenDocs.get(r.doc).doc,index:frozenDocs.get(r.doc).index.get(r.index)}));
+    }
+    const newImportFiles=[...entries.values()].filter(e=>!originalEntries.has(e.path)&&(state.importDocs.has(e.path)||stagedPaths.has(e.path)||stagedFolders.has(e.path.split('/')[0])));
     // First await: edits made after this point cannot change checkpoint content.
-    await migrateControls(originalEntries,entries,removedPaths,state.allowLegacyHistoryClear);
+    if(editMode)await migrateControls(originalEntries,entries,removedPaths,state.allowLegacyHistoryClear);
     if(checkpoint.history?.clearBackupFolder)for(const path of [...entries.keys()])if(path.startsWith('.viewer-backups/')){entries.delete(path);removedPaths.add(path)}
     for(const path of removedPaths)if(!rollback.has(path)&&originalEntries.has(path)){const original=await blobText(originalEntries.get(path).blob);rollback.set(path,()=>new Blob([original],{type:'application/json'}))}
-    for(const [path,entry]of entries)if(path.split('/').pop()==='chat.html'&&dataChanged){
+    for(const [path,entry]of entries)if(path.split('/').pop()==='chat.html'&&updateChat){
       const original=await blobText(entry.blob),embedded=/<script\b[^>]*\bid=["']data["'][^>]*>([\s\S]*?)<\/script>/i.exec(original);let portable=false;try{const data=embedded&&C.parse(embedded[1]);portable=data?.version===2&&Array.isArray(data.sources)}catch(_){}
-      rollback.set(path,()=>new Blob([original],{type:'text/html'}));const updated=portable?E.html(original,await E.payload(frozenRecords,resources)):C.syncChatHTML(original,combined);entries.set(path,{path,blob:new Blob([updated],{type:'text/html'})});
+      rollback.set(path,()=>new Blob([original],{type:'text/html'}));const updated=portable?E.html(original,await E.payload(frozenRecords,resources,{editMode,starred,sort})):C.syncChatHTML(original,combined);entries.set(path,{path,blob:new Blob([updated],{type:'text/html'})});
     }
     for(const [path,entry]of entries)if(path==='export_manifest.json'){
-      const original=await blobText(entry.blob),cleaned=cleanControlManifest(original),manifest=C.parse(cleaned),edits=[];rollback.set(path,()=>new Blob([original],{type:'application/json'}));
+      const original=await blobText(entry.blob),cleaned=registerImportedFiles(cleanControlManifest(original),newImportFiles,docs),manifest=C.parse(cleaned),edits=[];rollback.set(path,()=>new Blob([original],{type:'application/json'}));
       for(const [i,item]of (Array.isArray(manifest.export_files)?manifest.export_files:[]).entries())if(C.object(item)&&typeof item.path==='string'&&entries.has(item.path)&&item.path!==path&&C.get(manifest,['export_files',i,'size_bytes'])!==undefined&&item.size_bytes!==entries.get(item.path).blob.size)edits.push({path:['export_files',i,'size_bytes'],value:entries.get(item.path).blob.size});
       const updated=C.patch(cleaned,edits);entries.set(path,{path,blob:new Blob([updated],{type:'application/json'})});
     }
     const output=[...entries.values()];output.changedPaths=new Set(output.filter(e=>originalEntries.get(e.path)?.blob!==e.blob).map(e=>e.path));
     for(const path of output.changedPaths)if(!rollback.has(path)&&originalEntries.has(path)){let original=state.inputTexts.get(path);if(original===undefined)original=await blobText(originalEntries.get(path).blob);rollback.set(path,()=>new Blob([original],{type:originalEntries.get(path).blob.type||'application/octet-stream'}))}
-    output.rollback=rollback;output.removedPaths=removedPaths;output.clearBackupFolder=Boolean(checkpoint.history?.clearBackupFolder);output.fileState=files;output.checkpoint=checkpoint;return output;
+    output.clearMetadata=!editMode;output.rollback=rollback;output.removedPaths=removedPaths;output.clearBackupFolder=Boolean(checkpoint.history?.clearBackupFolder);output.fileState=files;output.checkpoint=checkpoint;return output;
   }
   async function workspaceArchive(){return C.zip(await workspaceEntries(),(n,total)=>notify('正在打包副本：'+n+' / '+total))}
   function updateSourceInfo(){
@@ -995,9 +1189,35 @@
     try{if(typeof window.showOpenFilePicker==='function'){const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'ZIP',accept:{'application/zip':['.zip']}}]}),opened=await readZIP(await handle.getFile(),handle);await loadEntries(opened.entries,null,opened.source)}else $('zip-input').click()}
     catch(error){if(error.name!=='AbortError')notify('打开失败：'+error.message,true)}
   }
+  function markModeSaved(checkpoint){
+    state.savedMode=checkpoint?.mode??state.editMode;
+    state.savedStars=checkpoint?.stars??JSON.stringify([...state.stars].sort());
+  }
+  async function toggleEditMode(){
+    if(!state.docs.length||state.busy||state.modeChanging||state.downloadPending)return false;
+    if(!state.editMode){
+      state.editMode=true;state.viewSort=null;updateChanges();updateSelection();await renderList();await renderCurrent(true);return true;
+    }
+    if(!confirm(I.t('关闭编辑模式会保存当前聊天并清除星标、手动排序和增量备份（如已启用）。是否继续？')))return false;
+    flushEditor();
+    const previous={editMode:state.editMode,viewSort:state.viewSort,stars:state.stars,order:state.order,sort:state.sort,orderModified:state.orderModified,journalProblem:state.journalProblem};
+    const backup=journal?.maintenanceCheckpoint();
+    state.modeChanging=true;state.editMode=false;state.viewSort=null;state.stars=new Set();state.order=[];state.sort='updated';state.orderModified=false;state.journalProblem=null;
+    if(journal){journal.clearAll(backupSnapshot());journal.setEnabled(false)}
+    let saved=false;
+    try{
+      const source=state.source,needsCopy=!source||source.kind==='embedded'||source.kind==='directory-readonly'&&typeof window.showDirectoryPicker!=='function'||source.kind==='zip'&&!source.handle&&typeof window.showOpenFilePicker!=='function';
+      saved=await (needsCopy?saveAsChoice('zip'):saveWorkspace());
+      if(saved){historyStore.reset();state.undo=[];state.redo=[];audit.reset();if(!state.backupCleanupWarning)notify(state.downloadPending?'已生成 ZIP 下载，请确认副本已保存':'编辑模式已关闭，当前聊天已保存。')}
+      return saved;
+    }finally{
+      if(!saved){Object.assign(state,previous);if(backup)journal.restoreMaintenance(backup)}
+      state.modeChanging=false;updateChanges();updateSelection();await renderList();await renderCurrent(true);
+    }
+  }
   async function saveWorkspace(asNew=false){
     if(state.busy)return false;flushEditor();if(!state.docs.length||$('app').hidden)return false;
-    if(!asNew&&state.source&&state.source.kind!=='embedded'&&!state.journalProblem&&!unsaved())return true;
+    if(!asNew&&!state.modeChanging&&state.source&&state.source.kind!=='embedded'&&!state.journalProblem&&!unsaved())return true;
     if(asNew||!state.source||state.source.kind==='embedded')return saveAsChoice(asNew&&state.source?.kind!=='zip'&&state.source?.kind!=='embedded'?'directory':'zip');
     state.saving=true;setBusy(true);zipProgress('准备保存',null);
     try{
@@ -1012,9 +1232,9 @@
       }
       await IO.permission(source.handle);const built=await build;if(built.error)throw built.error;const entries=built.entries;if(source.kind==='zip')zipProgress('整理文件',null);
       if(source.kind==='zip'){state.source=await IO.saveZip(source,entries,source.handle,false,zipProgress);state.backupCleanupWarning=false;notify('已保存到原 ZIP')}
-      else{const result=await IO.saveDirectory(source,entries,{paths:entries.changedPaths,rollback:entries.rollback,removePaths:entries.removedPaths,clearBackupFolder:entries.clearBackupFolder,progress:zipProgress});state.source=result.source;state.backupCleanupWarning=Boolean(result.cleanupFailures?.length);notify(state.backupCleanupWarning?'历史文件已删除，但空目录未能移除。':'已保存到当前目录',state.backupCleanupWarning)}
+      else{const result=await IO.saveDirectory(source,entries,{paths:entries.changedPaths,rollback:entries.rollback,removePaths:entries.removedPaths,clearBackupFolder:entries.clearBackupFolder,clearMetadata:entries.clearMetadata,progress:zipProgress});state.source=result.source;state.backupCleanupWarning=Boolean(result.cleanupFailures?.length);notify(state.backupCleanupWarning?'历史文件已删除，但空目录未能移除。':'已保存到当前目录',state.backupCleanupWarning)}
       if(journal&&entries.checkpoint.journal)journal.accept(entries.checkpoint.journal);if(entries.checkpoint.history)historyStore.accept(entries.checkpoint.history);state.savedStructuralRevision=entries.checkpoint.revision;
-      state.entries=new Map(entries.map(e=>[e.path,e]));state.allowLegacyHistoryClear=false;state.savedFileEdits=entries.fileState;state.inputTexts.clear();if(entries.find(e=>e.path==='.viewer-state/viewer-history.json'))state.inputTexts.set('.viewer-state/viewer-history.json',await blobText(entries.find(e=>e.path==='.viewer-state/viewer-history.json').blob));state.savedSign=entries.checkpoint.sign;audit.markSaved(entries.checkpoint.audit,state.source.name);state.downloadPending=false;state.lastSaveDownload=false;await renderList();updateSourceInfo();updateChanges();return true;
+      state.entries=new Map(entries.map(e=>[e.path,e]));state.allowLegacyHistoryClear=false;state.savedFileEdits=entries.fileState;state.inputTexts.clear();if(entries.find(e=>e.path==='.viewer-state/viewer-history.json'))state.inputTexts.set('.viewer-state/viewer-history.json',await blobText(entries.find(e=>e.path==='.viewer-state/viewer-history.json').blob));markModeSaved(entries.checkpoint);state.savedSign=entries.checkpoint.sign;audit.markSaved(entries.checkpoint.audit,state.source.name);state.downloadPending=false;state.lastSaveDownload=false;await renderList();updateSourceInfo();updateChanges();return true;
     }catch(error){if(error.name!=='AbortError')notify('保存失败：'+error.message,true);return false}finally{state.saving=false;setBusy(false)}
   }
   async function saveAsChoice(kind){
@@ -1032,14 +1252,14 @@
         await IO.permission(target);
       }
       const built=await build;if(built.error)throw built.error;const entries=built.entries;if(kind==='zip')zipProgress('整理文件',null);
-      if(kind==='directory'){const result=await IO.saveDirectory(target.source,entries,{clearBackupFolder:entries.clearBackupFolder,progress:zipProgress});state.source=result.source;state.lastSaveDownload=false}
+      if(kind==='directory'){const result=await IO.saveDirectory(target.source,entries,{clearBackupFolder:entries.clearBackupFolder,clearMetadata:entries.clearMetadata,progress:zipProgress});state.source=result.source;state.lastSaveDownload=false}
       else if(target){state.source=await IO.saveZip(state.source,entries,target,true,zipProgress);state.lastSaveDownload=false}
       else{
         const blob=await IO.zipBlob(state.source,entries,zipProgress);zipProgress('校验保存结果',null);const opened=await IO.zip(blob);state.source=opened.source;download(blob,('ChatGPT'+I.t('-副本.zip')));state.source.name=('ChatGPT'+I.t('-副本.zip'));
-        state.lastSaveDownload=true;state.downloadPending=true;state.downloadSign=entries.checkpoint.sign;state.downloadAudit=entries.checkpoint.audit;state.downloadJournal=entries.checkpoint.journal;state.downloadHistory=entries.checkpoint.history;state.downloadRevision=entries.checkpoint.revision;state.downloadFiles=entries.fileState;
+        state.lastSaveDownload=true;state.downloadPending=true;state.downloadSign=entries.checkpoint.sign;state.downloadModeCheckpoint=entries.checkpoint;state.downloadAudit=entries.checkpoint.audit;state.downloadJournal=entries.checkpoint.journal;state.downloadHistory=entries.checkpoint.history;state.downloadRevision=entries.checkpoint.revision;state.downloadFiles=entries.fileState;
       }
       state.entries=new Map(entries.map(e=>[e.path,e]));
-      if(!state.lastSaveDownload){state.allowLegacyHistoryClear=false;state.savedFileEdits=entries.fileState;state.inputTexts.clear();if(journal&&entries.checkpoint.journal)journal.accept(entries.checkpoint.journal);if(entries.checkpoint.history)historyStore.accept(entries.checkpoint.history);state.savedStructuralRevision=entries.checkpoint.revision;state.savedSign=entries.checkpoint.sign;audit.markSaved(entries.checkpoint.audit,state.source.name);state.downloadPending=false;await renderList()}
+      if(!state.lastSaveDownload){state.allowLegacyHistoryClear=false;state.savedFileEdits=entries.fileState;state.inputTexts.clear();if(journal&&entries.checkpoint.journal)journal.accept(entries.checkpoint.journal);if(entries.checkpoint.history)historyStore.accept(entries.checkpoint.history);state.savedStructuralRevision=entries.checkpoint.revision;markModeSaved(entries.checkpoint);state.savedSign=entries.checkpoint.sign;audit.markSaved(entries.checkpoint.audit,state.source.name);state.downloadPending=false;await renderList()}
       const closeAfter=state.closeAfterSave;state.closeAfterSave=false;updateSourceInfo();updateChanges();notify(state.lastSaveDownload?'已生成 ZIP 下载，请确认副本已保存':'另存为完成；之后保存将写入这个新位置');
       if(closeAfter){if(state.lastSaveDownload){$('leave-message').textContent='请确认下载完成后再关闭';$('leave-confirm-download').hidden=false}else if(!unsaved()&&!editorChanged()){$('leave-dialog').close();closeWorkspace(true)}else $('leave-message').textContent=I.t('保存期间又有新的修改，请再次保存。')}
           return true;
@@ -1058,19 +1278,20 @@
     updateExportOptions();$('export-dialog').showModal();
   }
   function updateExportOptions(){
-    const format=$('export-format').value,paged=format==='pdf'||format==='print',bundle=format==='directory'||format==='zip',rows=exportRecords();
+    const format=$('export-format').value,paged=format==='pdf'||format==='print',obsidian=format==='obsidian',bundle=format==='directory'||format==='zip',rows=exportRecords();
     const name=rows.length===1?title(rows[0]):'聊天记录';if($('export-name').value===state.exportAutoName)$('export-name').value=name;state.exportAutoName=name;
     $('export-scope').textContent='准备导出 '+rows.length+' 段聊天，包含当前未保存的编辑内容。';
-    $('markdown-options').hidden=format!=='markdown';$('export-layout-label').hidden=paged||bundle;
-    $('export-name-label').hidden=paged||format==='directory'||!bundle&&$('export-layout').value==='separate';
+    $('markdown-options').hidden=format!=='markdown'&&!obsidian;$('export-layout-label').hidden=paged||bundle||obsidian;
+    $('export-name-label').hidden=paged||format==='directory'||!obsidian&&!bundle&&$('export-layout').value==='separate';
     $('export-start').textContent=paged?'继续到页面设置':'开始导出';$('export-start').disabled=!rows.length||state.busy;
-    $('export-hint').textContent=bundle?'仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。文件夹请选择空目录。':paged?'沿用浏览器分页和打印功能；PDF 请在打印窗口选择“另存为 PDF”。':'使用当前草稿，即使还没保存。分别导出时按聊天标题命名。';
+    I.setText($('export-hint'),obsidian?'解压 ZIP，在 Obsidian 中将解压目录作为知识库打开，然后打开聊天索引。':bundle?'仅导出指定范围的完整会话结构和相关媒体，可重新打开；不会切换保存位置或清除未保存状态。文件夹请选择空目录。':paged?'沿用浏览器分页和打印功能；PDF 请在打印窗口选择“另存为 PDF”。':'使用当前草稿，即使还没保存。分别导出时按聊天标题命名。');
   }
   async function exportSelection(){
     flushEditor();if(state.busy)return;
     const records=exportRecords();if(!records.length)return;
     if(['pdf','print'].includes($('export-format').value)){const pdf=$('export-format').value==='pdf',scope=$('export-range').value,keys=[...state.exportKeys];$('export-dialog').close();openPrint(pdf,keys,scope);return}
     const format=$('export-format').value,combined=$('export-layout').value==='combined',name=E.filename($('export-name').value||'聊天记录');
+    const exportSettings={editMode:state.editMode&&(state.savedMode||state.orderModified||state.stars.size>0||state.deleted.size>0||state.docs.some(doc=>doc.changes.size)||effectiveDocuments().some(doc=>state.importDocs.has(doc.path))||state.structuralRevision>0),starred:new Set(state.stars)};
     setBusy(true);$('export-start').disabled=true;
     try{
       if(format==='directory'||format==='zip'){
@@ -1083,18 +1304,18 @@
           if(state.source?.handle?.isSameEntry&&await state.source.handle.isSameEntry(handle))throw new Error('导出请选择新的 ZIP；覆盖源 ZIP 请使用保存');
           if(state.source?.kind==='zip'&&!state.source.handle&&await IO.digest(await handle.getFile())===state.source.zipDigest)throw new Error('导出目标与打开的 ZIP 内容相同，请选择新的 ZIP');
         }
-        if(format==='zip')zipProgress('整理文件',null);const entries=await E.bundle(records,state.resources,exportShell);
+        if(format==='zip')zipProgress('整理文件',null);const entries=await E.bundle(records,state.resources,exportShell,exportSettings);
         if(format==='directory')await IO.exportDirectory(handle,entries);
         else{const blob=await IO.zipBlob(null,entries,zipProgress);if(handle){await IO.permission(handle);zipProgress('写入 ZIP',null);await IO.write(handle,blob,zipProgress)}else download(blob,name+'.zip')}
-      }else if(format==='markdown'){
-        const entries=await E.markdown(records,state.resources,{combined,name,branches:state.branches,allBranches:$('export-all-branches').checked,thoughts:$('export-thoughts').checked,tools:$('export-tools').checked,resolveResource:resourceBlob});
-        download(await C.zip(entries,(n,t)=>notify('正在打包 Markdown 与媒体：'+n+' / '+t)),name+'-Markdown.zip');
+      }else if(format==='markdown'||format==='obsidian'){
+        const obsidian=format==='obsidian',entries=await E.markdown(records,state.resources,{obsidian,combined:combined&&!obsidian,name,branches:state.branches,allBranches:$('export-all-branches').checked,thoughts:$('export-thoughts').checked,tools:$('export-tools').checked,resolveResource:resourceBlob});
+        download(await C.zip(entries,(n,t)=>notify('正在打包 Markdown 与媒体：'+n+' / '+t)),name+(obsidian?'-Obsidian.zip':'-Markdown.zip'));
       }else if(format==='html'){
-        if(combined){const payload=await E.payload(records,state.resources);download(new Blob([E.html(exportShell,payload)],{type:'text/html'}),name+'.html')}
-        else{const used=new Set(),entries=[];for(const r of records){notify('正在生成独立 HTML：'+title(r));const payload=await E.payload([r],state.resources);entries.push({path:E.unique(E.filename(title(r)),used)+'.html',blob:new Blob([E.html(exportShell,payload)],{type:'text/html'})});await yieldUI()}download(await C.zip(entries),name+'-HTML.zip')}
+        if(combined){const payload=await E.payload(records,state.resources,exportSettings);download(new Blob([E.html(exportShell,payload)],{type:'text/html'}),name+'.html')}
+        else{const used=new Set(),entries=[];for(const r of records){notify('正在生成独立 HTML：'+title(r));const payload=await E.payload([r],state.resources,exportSettings);entries.push({path:E.unique(E.filename(title(r)),used)+'.html',blob:new Blob([E.html(exportShell,payload)],{type:'text/html'})});await yieldUI()}download(await C.zip(entries),name+'-HTML.zip')}
       }else{
         const groups=combined?[records]:records.map(r=>[r]),entries=[],used=new Set();
-        for(const group of groups){const payload=await E.payload(group,state.resources),folder=combined?'':E.unique(E.filename(title(group[0])),used)+'/';
+        for(const group of groups){const payload=await E.payload(group,state.resources,exportSettings),folder=combined?'':E.unique(E.filename(title(group[0])),used)+'/';
           entries.push({path:folder+'conversations.json',blob:new Blob([payload.sources[0].text],{type:'application/json'})});
           for(const item of payload.archive){const binary=atob(item.base64),bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));entries.push({path:folder+item.path,blob:new Blob([bytes],{type:item.mime})})}
         }
@@ -1133,6 +1354,11 @@
       await loadEntries(entries,payload.sources,{kind:'embedded',name:'HTML',baseline:new Map()});
     } catch (error) { if ($('data').textContent.trim() !== 'null') notify('内嵌数据读取失败：' + error.message,true); }
   }
+  $('selection-import').addEventListener('click',openImport);
+  $('import-cancel').addEventListener('click',()=>$('import-dialog').close());
+  $('import-directory').addEventListener('click',()=>chooseImport('directory'));$('import-zip').addEventListener('click',()=>chooseImport('zip'));
+  $('import-folder-input').addEventListener('change',event=>{const files=[...event.target.files];event.target.value='';if(files.length)runImport(()=>directoryInputEntries(files))});
+  $('import-zip-input').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';if(file)runImport(async()=>(await IO.zip(file,null,zipProgress)).entries)});
   $('folder-input').addEventListener('change', event => { if (event.target.files.length) selectedFiles(event.target.files); event.target.value = ''; });
   $('new-folder').addEventListener('click', () => $('open-dialog').showModal());
   $('open-directory').addEventListener('click',openDirectory);$('open-zip').addEventListener('click',openZIP);
@@ -1163,9 +1389,9 @@
   $('multi-toggle').addEventListener('click',()=>{state.multi=!state.multi;if(!state.multi){state.selected.clear();state.selectionAnchor=null;}updateSelection();renderList()});
   $('select-visible').addEventListener('click',()=>{state.multi=true;for(const key of state.visibleKeys||[])state.selected.add(key);updateSelection();renderList()});
   $('select-none').addEventListener('click',()=>{state.selected.clear();updateSelection();renderList()});
-  $('select-invert').addEventListener('click',()=>{if(editBlocked())return;state.multi=true;state.selectionAnchor=null;for(const key of state.visibleKeys||[])state.selected.has(key)?state.selected.delete(key):state.selected.add(key);updateSelection();renderList()});
+  $('select-invert').addEventListener('click',()=>{if(state.busy)return;state.multi=true;state.selectionAnchor=null;for(const key of state.visibleKeys||[])state.selected.has(key)?state.selected.delete(key):state.selected.add(key);updateSelection();renderList()});
   $('selection-delete').addEventListener('click',()=>deleteRecords([...state.selected]));$('selection-export').addEventListener('click',()=>openExport([...state.selected]));
-  $('sort-order').addEventListener('change',()=>{if(editBlocked()){$('sort-order').value=state.sort;return}const before=orderState(),beforeSort=state.sort,wasModified=state.orderModified;state.sort=$('sort-order').value;if(state.sort!==beforeSort){journal?.recordOrder?.(before,orderState());state.undo.push(audit.track({kind:'order',before:[...state.order],after:[...state.order],beforeSort,afterSort:state.sort,wasModified,target:state.current}));state.redo=[];state.orderModified=true}state.listLimit=200;updateChanges();renderList()});
+  $('sort-order').addEventListener('change',()=>{if(state.busy){$('sort-order').value=displaySort();return}if(!state.editMode){const value=$('sort-order').value;if(value!=='manual'){state.viewSort=value;state.listLimit=200;renderList()}else $('sort-order').value=displaySort();return}const before=orderState(),beforeSort=state.sort,wasModified=state.orderModified;state.sort=$('sort-order').value;if(state.sort!==beforeSort){journal?.recordOrder?.(before,orderState());state.undo.push(audit.track({kind:'order',before:[...state.order],after:[...state.order],beforeSort,afterSort:state.sort,wasModified,target:state.current}));state.redo=[];state.orderModified=true}state.listLimit=200;updateChanges();renderList()});
   $('conv-list').addEventListener('scroll',()=>{for(const menu of $('conv-list').querySelectorAll('.conversation-menu'))menu.open=false},{passive:true});
   for(const id of ['export-format','export-layout','export-range'])$(id).addEventListener('change',updateExportOptions);
   $('export-cancel').addEventListener('click',()=>$('export-dialog').close());$('export-start').addEventListener('click',exportSelection);
@@ -1175,12 +1401,12 @@
   $('show-thoughts').addEventListener('change', () => renderCurrent(true));
   $('show-tool').addEventListener('change', () => renderCurrent(true));
   $('branch').addEventListener('change', () => { if (state.current) { state.branches.set(state.current,$('branch').value); renderCurrent(false,true); } });
-  $('edit-title').addEventListener('click',editTitle);
+  $('edit-title').addEventListener('click',editTitle);$('edit-mode').addEventListener('click',toggleEditMode);
   $('cancel-edit').addEventListener('click',() => {$('editor').close();editorChanged=()=>false;for(const editor of activeEditors)editor.destroy();activeEditors=[];updateChanges()});
   $('editor').addEventListener('close',()=>{editorChanged=()=>false;for(const editor of activeEditors)editor.destroy();activeEditors=[];updateChanges()});
   $('undo').addEventListener('click',() => historyEdit('undo'));
   $('redo').addEventListener('click',() => historyEdit('redo'));
-  for(const format of ['html','markdown','json','directory','zip'])$('quick-'+format).addEventListener('click',()=>openExport(undefined,format));
+  for(const format of ['html','markdown','obsidian','json','directory','zip'])$('quick-'+format).addEventListener('click',()=>openExport(undefined,format));
   $('save-workspace').addEventListener('click',()=>saveWorkspace(false));$('save-as-workspace').addEventListener('click',()=>saveAsChoice('directory'));$('save-as-zip-workspace').addEventListener('click',()=>saveAsChoice('zip'));
   $('document-state').addEventListener('click',showChanges);$('history-close').addEventListener('click',()=>$('history-dialog').close());
   const menus=[...document.querySelectorAll('.exclusive-menu')];
@@ -1188,7 +1414,7 @@
     for(const menu of menus){menu.querySelector('summary').addEventListener('click',event=>{if(menu.classList.contains('disabled')){event.preventDefault();return}closeMenus(menu)});menu.addEventListener('toggle',()=>{if(menu.classList.contains('disabled')){menu.open=false;return}if(menu.open)closeMenus(menu)})}
   document.addEventListener('click',event=>{if(!event.target.closest('.exclusive-menu'))closeMenus()});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenus()});
-  const menuActions={'menu-open':openDirectory,'menu-open-zip':openZIP,'menu-save':()=>saveWorkspace(false),'menu-save-as-directory':()=>saveAsChoice('directory'),'menu-save-as-zip':()=>saveAsChoice('zip'),'menu-undo':()=>historyEdit('undo'),'menu-redo':()=>historyEdit('redo'),'menu-title':editTitle,
+  const menuActions={'menu-open':openDirectory,'menu-open-zip':openZIP,'menu-import':openImport,'menu-mode':toggleEditMode,'menu-star':()=>toggleStar(state.current),'menu-save':()=>saveWorkspace(false),'menu-save-as-directory':()=>saveAsChoice('directory'),'menu-save-as-zip':()=>saveAsChoice('zip'),'menu-undo':()=>historyEdit('undo'),'menu-redo':()=>historyEdit('redo'),'menu-title':editTitle,
     'menu-display':()=>{$('appearance-menu').open=true},'menu-language':()=>{$('language-menu').open=true}};
   for(const [id,action]of Object.entries(menuActions))$(id).addEventListener('click',()=>{closeMenus();action()});
   $('menu-close').addEventListener('click',requestClose);
@@ -1196,7 +1422,7 @@
   function hideExportFlyout(){$('export-flyout').hidden=true;$('menu-export-arrow').setAttribute('aria-expanded','false')}
   function showExportFlyout(){
     const flyout=$('export-flyout');flyout.hidden=false;$('menu-export-arrow').setAttribute('aria-expanded','true');
-    const rect=$('menu-export-arrow').getBoundingClientRect?.()||{right:300,left:270,top:100},width=192,height=290;
+    const rect=$('menu-export-arrow').getBoundingClientRect?.()||{right:300,left:270,top:100},width=220,height=330;
     flyout.style.left=Math.max(8,rect.right+width>(window.innerWidth||1200)?rect.left-width:rect.right+4)+'px';
     flyout.style.top=Math.max(8,Math.min(rect.top,(window.innerHeight||800)-height-8))+'px';
   }
@@ -1206,11 +1432,11 @@
     if(['Escape','ArrowLeft'].includes(event.key)){event.preventDefault();hideExportFlyout();$('menu-export-arrow').focus();return}
     if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;event.preventDefault();const buttons=[...$('export-flyout').querySelectorAll('button')],i=buttons.indexOf(event.target);buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();
   });
-  for(const format of ['html','markdown','json','pdf','print','directory','zip'])$('flyout-'+format).addEventListener('click',()=>{closeMenus();if(format==='pdf'||format==='print')openPrint(format==='pdf');else openExport(undefined,format)});
+  for(const format of ['html','markdown','obsidian','json','pdf','print','directory','zip'])$('flyout-'+format).addEventListener('click',()=>{closeMenus();if(format==='pdf'||format==='print')openPrint(format==='pdf');else openExport(undefined,format)});
   $('leave-cancel').addEventListener('click',()=>{state.closeAfterSave=false;$('leave-dialog').close()});
   $('leave-discard').addEventListener('click',()=>{if(state.busy)return;$('leave-dialog').close();editorChanged=()=>false;$('editor').close();closeWorkspace()});
   $('leave-save').addEventListener('click',()=>saveBeforeClose(false));$('leave-save-as').addEventListener('click',()=>saveBeforeClose('zip'));$('leave-save-as-directory').addEventListener('click',()=>saveBeforeClose('directory'));
-  const confirmDownloaded=()=>{if(state.downloadFiles)state.savedFileEdits=state.downloadFiles;state.inputTexts.clear();if(journal&&state.downloadJournal)journal.accept(state.downloadJournal);if(state.downloadHistory)historyStore.accept(state.downloadHistory);renderList();state.savedStructuralRevision=state.downloadRevision??state.structuralRevision??0;state.savedSign=state.downloadSign;audit.markSaved(state.downloadAudit,state.source?.name);state.downloadPending=false;updateChanges()};
+  const confirmDownloaded=()=>{if(state.downloadFiles)state.savedFileEdits=state.downloadFiles;state.inputTexts.clear();if(journal&&state.downloadJournal)journal.accept(state.downloadJournal);if(state.downloadHistory)historyStore.accept(state.downloadHistory);renderList();state.savedStructuralRevision=state.downloadRevision??state.structuralRevision??0;markModeSaved(state.downloadModeCheckpoint);state.savedSign=state.downloadSign;audit.markSaved(state.downloadAudit,state.source?.name);state.downloadPending=false;updateChanges()};
   $('confirm-download').addEventListener('click',confirmDownloaded);
   $('leave-confirm-download').addEventListener('click',()=>{confirmDownloaded();if(!unsaved()){$('leave-dialog').close();closeWorkspace()}else $('leave-message').textContent='下载后还有新的修改，请再次保存。'});
   window.addEventListener('popstate', fromHash); window.addEventListener('hashchange', fromHash);

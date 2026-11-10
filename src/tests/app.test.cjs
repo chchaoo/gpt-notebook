@@ -31,6 +31,8 @@ class Element {
 function setup(){
   const ids={},body=new Element('body'), downloads=[],urls=new Map();
   const id=name=>ids[name] ||= new Element(name==='branch'?'select':'div');
+  for(const direction of ['undo','redo'])id(direction+'-menu').append(new Element('summary'));
+  const manual=new Element('option');id('sort-order').querySelector=()=>manual;
   const doc={body,documentElement:{outerHTML:'<html><script id="data" type="application/json">null</script></html>',style:{setProperty(){}}},getElementById:id,createElement(tag){const e=new Element(tag);if(tag==='a')e.onDownload=(url,name)=>downloads.push({blob:urls.get(url),name});return e},createTextNode(value){const e=new Element('#text',3);e.textContent=value;return e},createDocumentFragment:()=>new Element('fragment',11),querySelectorAll:s=>body.querySelectorAll(s),addEventListener(){}};
   id('data').textContent='null';id('app').hidden=true;
   const ctx={ViewerCore:C,ViewerJournal:require('../viewer_journal.js'),ViewerJournalStore:require('../viewer_journal_store.js'),ViewerHistory:require('../viewer_history.js'),ViewerOutline:require('../viewer_outline.js'),ViewerTitleIndex:require('../viewer_title_index.js'),ViewerStorage:require('../viewer_storage.js')(C,require('../vendor/jszip/jszip.min.js')),ViewerSearch:require('../viewer_search.js'),ViewerI18n:{t:x=>x,locale:()=> 'zh-CN',observe(){},setText:(el,value)=>{el.textContent=value;return el},setAttribute:(el,key,value)=>el.setAttribute(key,value)},ViewerPrint:require('../viewer_print.js')(C,require('../viewer_exports.js')),ViewerExports:require('../viewer_exports.js'),ViewerNavigation:require('../viewer_navigation.js'),ViewerTransfer:require('../viewer_transfer.js'),ViewerMarkdown:{render:value=>value},document:doc,Node:{TEXT_NODE:3,ELEMENT_NODE:1},Blob,TextEncoder,TextDecoder,setTimeout:(f,n)=>n>=60000?0:setTimeout(f,n),clearTimeout,
@@ -39,6 +41,7 @@ function setup(){
     atob:value=>Buffer.from(value,'base64').toString('binary')};
   ctx.window=ctx;ctx.addEventListener=()=>{};
   let source=fs.readFileSync(path.join(__dirname,'../viewer_app.js'),'utf8');
+  source=source.replace('state.editMode=Boolean(settings||controlEntry(ViewerJournalStore.path));','state.editMode=true;');
   source=source.replace('updateChanges(); loadBaked();','globalThis.api={state,loadEntries,loadBaked,commit,historyEdit,renderCurrent,renderList,workspaceArchive,editMessage,editTitle,sniff};updateChanges();');
   vm.createContext(ctx);vm.runInContext(source,ctx);
   return {api:ctx.api,id,downloads};
