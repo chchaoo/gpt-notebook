@@ -16,3 +16,5 @@ The project MIT grant does not replace component licenses. Retain the following 
 | pinyin-pro | [src/vendor/pinyin-pro/LICENSE](src/vendor/pinyin-pro/LICENSE) |
 
 Development dependency versions are locked in pnpm-lock.yaml. Tests and editor rebuild tooling use those packages; a dependency being listed does not mean its full engine is shipped in the HTML. In particular, PDF uses browser printing, not a new embedded PDF engine. Gyroflow was consulted historically for UI design; its GPL QML implementation is not bundled.
+
+The [GitHub Corners](https://github.com/tholman/github-corners) Octocat artwork is by Tim Holman under the MIT license. The full notice is embedded next to the SVG in the template and the standalone HTML.

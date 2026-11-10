@@ -4,6 +4,8 @@
   // Catalog rows retain the source text so switching languages never translates
   // user messages or chains translations through another language.
   const rows=[
+    ["选择星标项", "Select starred chats", "選取星號對話", "スター付きの会話を選択", "별표 대화 선택", "Sélectionner les favoris", "Markierte Chats auswählen", "Seleccionar chats destacados", "Selecionar conversas marcadas", "Выбрать отмеченные чаты", "تحديد المحادثات المميزة"],
+    ["在 GitHub 查看项目", "View project on GitHub", "在 GitHub 查看專案", "GitHub でプロジェクトを見る", "GitHub에서 프로젝트 보기", "Voir le projet sur GitHub", "Projekt auf GitHub ansehen", "Ver el proyecto en GitHub", "Ver projeto no GitHub", "Открыть проект на GitHub", "عرض المشروع على GitHub"],
     ["文件夹名称", "Folder name", "資料夾名稱", "フォルダー名", "폴더 이름", "Nom du dossier", "Ordnername", "Nombre de carpeta", "Nome da pasta", "Имя папки", "اسم المجلد"],
     ["输入文件夹名称，再选择存放位置。程序会新建子文件夹并导出聊天和附件。", "Enter a folder name, then choose its location. Chats and attachments will be exported into the new subfolder.", "輸入資料夾名稱，再選擇存放位置。程式會建立子資料夾並匯出對話及附件。", "フォルダー名を入力して保存先を選択してください。新しいサブフォルダーにチャットと添付ファイルをエクスポートします。", "폴더 이름을 입력한 뒤 저장 위치를 선택하세요. 새 하위 폴더에 대화와 첨부 파일을 내보냅니다.", "Saisissez un nom et choisissez un emplacement. Les conversations et pièces jointes seront exportées dans un nouveau sous-dossier.", "Ordnernamen eingeben und Speicherort auswählen. Chats und Anhänge werden in den neuen Unterordner exportiert.", "Escribe un nombre y elige una ubicación. Los chats y archivos se exportarán a la nueva subcarpeta.", "Digite um nome e escolha o local. As conversas e os anexos serão exportados para a nova subpasta.", "Введите имя папки и выберите место. Чаты и вложения будут экспортированы в новую подпапку.", "أدخل اسم المجلد ثم اختر موقعه. ستُصدّر المحادثات والمرفقات إلى مجلد فرعي جديد."],
     ["请输入有效的文件夹名称。", "Enter a valid folder name.", "請輸入有效的資料夾名稱。", "有効なフォルダー名を入力してください。", "유효한 폴더 이름을 입력하세요.", "Saisissez un nom de dossier valide.", "Geben Sie einen gültigen Ordnernamen ein.", "Introduce un nombre de carpeta válido.", "Digite um nome de pasta válido.", "Введите допустимое имя папки.", "أدخل اسم مجلد صالحًا."],
@@ -1749,7 +1751,7 @@
     [/^已加载 (\d+) 个会话；默认显示当前分支$/,['已加载 $1 个会话；默认显示当前分支','Loaded $1 chats; showing current branches','已載入 $1 個對話；顯示目前分支','$1 件の会話を読み込みました','대화 $1개 로드됨',' $1 conversations chargées',' $1 Chats geladen',' $1 conversaciones cargadas',' $1 conversas carregadas','Загружено чатов: $1','تم تحميل $1 محادثة']],
     [/^共 (\d+) 个会话$/,['共 $1 个会话','$1 chats','共 $1 個對話','$1 件の会話','대화 $1개','$1 conversations','$1 Chats','$1 conversaciones','$1 conversas','$1 чатов','$1 محادثة']],
     [/^共 (\d+) 处$/,['共 $1 处','$1 matches','共 $1 處','$1 件の一致','일치 $1개','$1 résultats','$1 Treffer','$1 coincidencias','$1 resultados','$1 совпадений','$1 نتيجة']],
-    [/^已选 (\d+) 项$/,['已选 $1 项','$1 selected','已選 $1 項','$1 件を選択','$1개 선택됨','$1 sélectionnés','$1 ausgewählt','$1 seleccionados','$1 selecionados','Выбрано: $1','تم تحديد $1']],
+    [/^已选 (\d+) \/ (\d+) 项$/,["已选 $1 / $2 项", "$1 / $2 selected", "已選 $1 / $2 項", "$1 / $2 件を選択", "$1 / $2개 선택됨", "$1 / $2 sélectionnés", "$1 / $2 ausgewählt", "$1 / $2 seleccionados", "$1 / $2 selecionados", "Выбрано $1 / $2", "تم تحديد $1 / $2"]],
   ];
   statusTemplates.push(
     [/^正文 (\d+)$/,['正文 $1','Text $1','內文 $1','本文 $1','본문 $1','Texte $1','Text $1','Texto $1','Texto $1','Текст $1','النص $1']],

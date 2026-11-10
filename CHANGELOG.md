@@ -2,6 +2,11 @@
 
 [简体中文](https://github.com/chchaoo/gpt-notebook/wiki/更新记录)
 
+## 1.1.2 — 2026-11-11
+
+- Consolidated sidebar counts and added selection of starred chats.
+- Added an animated GitHub repository corner.
+
 ## 1.1.1 — 2026-11-11
 
 - Export a data archive into a named child folder inside the selected parent location.

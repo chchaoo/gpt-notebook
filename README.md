@@ -25,7 +25,7 @@
 | **Obsidian vault** | Export linked Markdown notes, formulas, an index and local attachments. | [Export to Obsidian](https://github.com/chchaoo/gpt-notebook/wiki/Export-to-Obsidian) |
 | **Split & merge** | Split selected chats into smaller archives or import chats into another archive. | [Split and merge archives](https://github.com/chchaoo/gpt-notebook/wiki/Split-and-Merge-Archives) |
 | **Read & search** | Open folders or ZIPs, search messages and switch branches. | [Reading and search](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#read-and-find) |
-| **Edit & organize** | Turn on Edit mode to edit text, star chats, reorder and undo changes. | [Editing and stars](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#edit-a-draft) |
+| **Edit & organize** | Turn on Edit mode to edit text, star chats, reorder and undo changes. Select starred chats together from the sidebar. | [Editing and stars](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#edit-a-draft) |
 | **Save & restore** | Save changes to an archive, compare versions and restore incremental history. | [Saving and history](https://github.com/chchaoo/gpt-notebook/wiki/Saving-and-History) |
 | **JSON & source-data copies** | Export original-structure JSON, a data folder or ZIP with relevant attachments. | [Export formats](https://github.com/chchaoo/gpt-notebook/wiki/Read-Edit-Export#export-what-you-need) |
 

@@ -64,5 +64,5 @@ test('print source matches the expected layout and progress reporting',()=>{
  // Reference print implementation hash; this check also works in a separately extracted source ZIP.
  assert.equal(require('node:crypto').createHash('sha256').update(Buffer.from(fs.readFileSync(path.join(root,'viewer_print.js'),'utf8').replace('markdown(block.text,message)','markdown(block.text)').replace(/\r\n/g,'\n'))).digest('hex'),'de955e30d22d736ec0f1760f2617c18e81e1cbb07b5944e4e118db57ab8d8547');
  for(const file of ['viewer_pdf.js','vendor/pdfmake','vendor/mathjax','vendor/pdf-fonts'])assert.equal(fs.existsSync(path.join(root,file)),false);
- assert.match(fs.readFileSync(path.join(root,'viewer_styles.css'),'utf8'),/\.sidebar-summary \.sb-stats\{border-top:0\}/);
+ assert.match(fs.readFileSync(path.join(root,'viewer_styles.css'),'utf8'),/#selection-tools\{display:flex;flex-wrap:wrap/);
 });

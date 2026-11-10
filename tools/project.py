@@ -52,7 +52,7 @@ def inventory():
 
 def freeze():
     files = inventory()
-    MANIFEST.write_text(json.dumps({'product':'GPT Notebook', 'version':'1.1.1', 'sha256':files}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8', newline='\n')
+    MANIFEST.write_text(json.dumps({'product':'GPT Notebook', 'version':'1.1.2', 'sha256':files}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8', newline='\n')
     print('Release manifest:', len(files), 'files')
 
 def verify():

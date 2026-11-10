@@ -34,8 +34,8 @@ test('all supported locales have explicit extended interface translations; code 
  assert.equal(I.t('准备导出 2 段聊天，包含当前未保存的编辑内容。'),'2 件の会話を出力（未保存の変更を含む）。');
 });
 test('multi-select reserves both translated labels and hides inactive count without removing reserved space',async()=>{
- const a=setup({editing:true});await load(a);const b=a.document.getElementById('multi-toggle');assert.equal(b.dataset.enterLabel,'多选');assert.equal(b.dataset.exitLabel,'退出多选');b.click();assert.equal(b.dataset.exitLabel,'退出多选');b.click();assert.equal(a.document.getElementById('selection-count').hidden,true);
- const css=fs.readFileSync(path.join(__dirname,'../viewer_styles.css'),'utf8');assert.ok(css.includes('content:attr(data-enter-label)'));assert.ok(css.includes('content:attr(data-exit-label)'));assert.ok(css.includes('#selection-count[hidden]{display:block!important;visibility:hidden}'));
+ const a=setup({editing:true});await load(a);const b=a.document.getElementById('multi-toggle');assert.equal(b.dataset.enterLabel,'多选');assert.equal(b.dataset.exitLabel,'退出多选');b.click();assert.equal(b.dataset.exitLabel,'退出多选');b.click();assert.equal(a.document.getElementById('selection-count').textContent,'共 1 个会话');
+ const css=fs.readFileSync(path.join(__dirname,'../viewer_styles.css'),'utf8');assert.ok(css.includes('content:attr(data-enter-label)'));assert.ok(css.includes('content:attr(data-exit-label)'));
 });
 test('status messages created in one language switch immediately through other languages without touching user text',async()=>{
  const a=setup({editing:true}),I=a.ctx.ViewerI18n;I.setLanguage('en');await load(a);assert.ok(a.document.getElementById('status').textContent.includes('Loaded'));

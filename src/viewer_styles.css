@@ -115,13 +115,6 @@
   .conv-item:hover { background: var(--bg-hover); }
   .conv-item.active { background: var(--bg-active); }
 
-  .sb-stats {
-    color: var(--text-muted);
-    font-size: 11px;
-    padding: 10px 16px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
 
   /* —— 主区 —— */
   .main {
@@ -626,7 +619,7 @@ body[data-theme="light"] .error { color: #a92b20; } body[data-theme="light"] .lo
 .conversation-popup button { text-align: left; border: 0; background: transparent; padding: 8px; }
 .list-management { padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .list-management label { display: flex; align-items: center; gap: 5px; } .list-management select { max-width: 140px; font-size: 12px; }
-#selection-tools { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; } #selection-count { width: 100%; color: var(--text-muted); }
+#selection-count { color: var(--text-muted); }
 .drag-grip { border: 0; padding: 3px; cursor: grab; background: transparent; font-size: 18px; } .drag-end { font-size: 11px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border); margin: 8px 0; padding: 10px; border-radius: 6px; }
 .export-field { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center; margin: 16px 0; font-size: 13px; } .export-field input, .export-field select { color: var(--text-primary); background: var(--bg-msg-user); border: 1px solid var(--border); border-radius: 6px; padding: 8px; min-width: 0; }
 #export-dialog { width: min(600px,95vw); } #markdown-options { display: grid; gap: 8px; font-size: 12px; } .leave-actions { display: flex; flex-wrap: wrap; gap: 9px; }
@@ -649,10 +642,9 @@ button:hover{background:var(--bg-hover)}
 .msg-content,.msg-content *,.edit-field textarea,input[type="search"],input[type="text"],.toastui-editor-main,.toastui-editor-main *{user-select:text;-webkit-user-select:text}
 .list-management{flex-wrap:nowrap;gap:7px;padding:7px 12px}
 .list-management label{flex-shrink:1;min-width:0}.list-management select{max-width:110px;min-width:0}
-#multi-toggle{white-space:nowrap;flex-shrink:0}#selection-count{width:auto;white-space:nowrap;margin-inline-start:auto;font-size:11px;text-align:end}
-.sidebar-summary{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:5px 12px;min-height:38px;border-top:1px solid var(--border)}
-.sidebar-summary .sb-stats{padding:0;margin:0;min-width:0;font-size:11px}
-#selection-tools{width:auto;flex-wrap:nowrap;gap:2px;flex-shrink:0;margin-inline-start:auto;align-items:center}
+#multi-toggle{white-space:nowrap;flex-shrink:0}#selection-count{width:auto;min-width:0;margin-inline-start:auto;font-size:11px;text-align:end}
+.sidebar-summary{display:flex;align-items:center;padding:5px 12px;min-height:38px;border-top:1px solid var(--border)}
+#selection-tools{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px;width:100%;align-items:center}
 .icon-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:31px;height:31px;padding:6px;border:0;background:transparent;border-radius:6px;color:var(--text-secondary)}
 .icon-button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
 .icon-button.danger{color:#dc4b51}.icon-button:disabled{opacity:.34}.icon-button:focus-visible{outline:2px solid var(--link)}
@@ -714,7 +706,6 @@ button:hover{background:var(--bg-hover)}
 .audit-item>button,.change-item>button{min-width:0;max-width:100%;overflow-wrap:anywhere;text-align:start}
 
 /* one separator before format shortcuts; no inherited short span rule. */
-.sidebar-summary .sb-stats{border-top:0}
 .export-quick-group{display:flex;align-items:center;gap:2px}
 .export-menu-row{display:flex;align-items:stretch}.export-menu-row>button:first-child{flex:1}.export-menu-row>button:last-of-type{width:32px;flex:none;text-align:center}
 .export-flyout{position:fixed;z-index:220;width:180px;max-height:calc(100vh - 16px);overflow:auto;display:grid;gap:3px;padding:6px;background:var(--bg-main);color:var(--text-primary);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px #0004}
@@ -735,7 +726,6 @@ select:focus,select:focus-visible{outline:none;box-shadow:none}select:focus-visi
 #multi-toggle{white-space:nowrap;flex-shrink:0;text-align:center}
 #multi-toggle::before{content:attr(data-enter-label)}#multi-toggle::after{content:attr(data-exit-label)}
 #multi-toggle::before,#multi-toggle::after{display:block;visibility:hidden;height:0;line-height:0;white-space:pre;pointer-events:none}
-.list-management #selection-count[hidden]{display:block!important;visibility:hidden}
 /* Neutral focus indication across app/editor controls, without blue halos. */
 :focus-visible{outline:1px solid var(--text-muted)!important;outline-offset:1px;box-shadow:none!important}
 select:focus,select:focus-visible{outline:none!important;box-shadow:none!important;border-color:var(--border)}
@@ -837,3 +827,13 @@ body:is([data-theme="sepia"],[data-theme="rose"],[data-theme="forest"]) .loader-
 
 @media(min-width:1510px){body:not(.sidebar-collapsed) .mode-switch{inset-inline-start:calc((100% - var(--sidebar-width))/2)}}
 #menu-mode[aria-checked=true]::before,#menu-star[aria-checked=true]::before{content:'✓ ';color:var(--link)}
+
+.topbar{position:relative;padding-right:66px}
+.github-corner{position:absolute;right:0;top:0;width:58px;height:58px;z-index:2;clip-path:polygon(0 0,100% 0,100% 100%);color:var(--on-accent)}
+.github-corner svg{display:block;width:100%;height:100%;fill:currentColor}
+.github-corner .github-fold{fill:var(--accent)}
+.github-corner .octo-arm{transform-origin:130px 106px}
+.github-corner:hover .octo-arm,.github-corner:focus-visible .octo-arm{animation:octocat-wave 560ms ease-in-out}
+.github-corner:focus-visible .github-fold{fill:var(--link)}
+@keyframes octocat-wave{20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}
+@media(prefers-reduced-motion:reduce){.github-corner:hover .octo-arm,.github-corner:focus-visible .octo-arm{animation:none}}

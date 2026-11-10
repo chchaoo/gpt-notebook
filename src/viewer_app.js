@@ -430,7 +430,11 @@
   function updateSelection(){
     $('multi-toggle').dataset.enterLabel=I.t('多选');$('multi-toggle').dataset.exitLabel=I.t('退出多选');
     $('selection-tools').hidden=false;$('multi-toggle').textContent=state.multi?'退出多选':'多选';
-    $('selection-count').hidden=!state.multi;$('selection-count').textContent='已选 '+state.selected.size+' 项';
+    const records=activeRecords(),total=records.length;
+    const count=state.multi?'已选 '+state.selected.size+' / '+total+' 项':
+      $('search').value?'匹配 '+(state.visibleKeys||[]).length+' / '+total+' 个会话':'共 '+total+' 个会话';
+    I.setText($('selection-count'),count);
+    $('select-starred').disabled=state.busy||!records.some(record=>state.stars.has(record.key));
     $('selection-export').disabled=!state.selected.size||state.busy;enableControls($('selection-delete'),!state.selected.size||editBlocked(),'删除所选');
     $('select-invert').disabled=!(state.visibleKeys||[]).length||state.busy;$('select-none').disabled=!state.selected.size||state.busy;$('select-visible').disabled=!state.records.length||state.busy;
   }
@@ -546,7 +550,7 @@
       if (i % 20 === 19) { await yieldUI(); if (token !== state.queryToken) return; }
     }
     if (token !== state.queryToken) return;
-    state.visibleKeys=matching.map(r=>r.key);$('select-invert').disabled=!matching.length||state.busy;$('sort-order').value=displaySort();
+    state.visibleKeys=matching.map(r=>r.key);updateSelection();$('sort-order').value=displaySort();
     const list = $('conv-list'); list.replaceChildren(); let group;
     // Render a bounded first page. The explicit button works without observers.
     let count = 0;
@@ -587,7 +591,6 @@
       end.addEventListener('dragover',event=>{if([...event.dataTransfer.types].includes('application/x-viewer-record')){event.preventDefault();event.stopPropagation()}});
       end.addEventListener('drop',event=>{const from=event.dataTransfer.getData('application/x-viewer-record');if(from){event.preventDefault();event.stopPropagation();moveRecord(from,'__end__')}});list.append(end);
     }
-    $('stats').textContent = q ? '匹配 ' + matching.length + ' / ' + activeRecords().length + ' 个会话' : '共 ' + activeRecords().length + ' 个会话';
     const rail=$('alphabet-index');rail.replaceChildren();rail.hidden=displaySort()!=='title';$('conv-list-wrap').classList.toggle('has-alphabet',displaySort()==='title');
     if(displaySort()==='title'){
       const available=new Set(matching.map(r=>TitleIndex.info(title(r)).group));
@@ -1419,6 +1422,14 @@
   $('select-visible').addEventListener('click',()=>{state.multi=true;for(const key of state.visibleKeys||[])state.selected.add(key);updateSelection();renderList()});
   $('select-none').addEventListener('click',()=>{state.selected.clear();updateSelection();renderList()});
   $('select-invert').addEventListener('click',()=>{if(state.busy)return;state.multi=true;state.selectionAnchor=null;for(const key of state.visibleKeys||[])state.selected.has(key)?state.selected.delete(key):state.selected.add(key);updateSelection();renderList()});
+  $('select-starred').addEventListener('click',()=>{
+    if(state.busy)return;
+    const starred=activeRecords().filter(record=>state.stars.has(record.key));
+    if(!starred.length)return;
+    state.multi=true;state.selectionAnchor=null;
+    for(const record of starred)state.selected.add(record.key);
+    updateSelection();renderList();
+  });
   $('selection-delete').addEventListener('click',()=>deleteRecords([...state.selected]));$('selection-export').addEventListener('click',()=>openExport([...state.selected]));
   $('sort-order').addEventListener('change',()=>{if(state.busy){$('sort-order').value=displaySort();return}if(!state.editMode){const value=$('sort-order').value;if(value!=='manual'){state.viewSort=value;state.listLimit=200;renderList()}else $('sort-order').value=displaySort();return}const before=orderState(),beforeSort=state.sort,wasModified=state.orderModified;state.sort=$('sort-order').value;if(state.sort!==beforeSort){journal?.recordOrder?.(before,orderState());state.undo.push(audit.track({kind:'order',before:[...state.order],after:[...state.order],beforeSort,afterSort:state.sort,wasModified,target:state.current}));state.redo=[];state.orderModified=true}state.listLimit=200;updateChanges();renderList()});
   $('conv-list').addEventListener('scroll',()=>{for(const menu of $('conv-list').querySelectorAll('.conversation-menu'))menu.open=false},{passive:true});

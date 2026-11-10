@@ -5,11 +5,11 @@ function raw(n=1){
  return JSON.stringify(Array.from({length:n},(_,i)=>({id:String(i),title:'Chat '+i,current_node:'a',mapping:{q:{parent:null,message:message('user','Question')},a:{parent:'q',message:message('assistant','Answer')}}})));
 }
 async function load(a,n=1){await a.api.loadEntries([{path:'conversations.json',blob:new Blob([raw(n)])}]);return a.api.state.records[0]}
-test('checkbox hit area, Shift range and count visibility follow multi-select mode',async()=>{
- const a=setup({editing:true}),d=a.document;await load(a,8);assert.equal(d.getElementById('selection-count').hidden,true);d.getElementById('multi-toggle').click();assert.equal(d.getElementById('selection-count').hidden,false);
+test('checkbox hit area, Shift range and count text follow multi-select mode',async()=>{
+ const a=setup({editing:true}),d=a.document;await load(a,8);assert.equal(d.getElementById('selection-count').textContent,'共 8 个会话');d.getElementById('multi-toggle').click();assert.equal(d.getElementById('selection-count').textContent,'已选 0 / 8 项');
  const keys=[...a.api.state.visibleKeys],hits=[...d.querySelectorAll('.selection-hit')];hits[1].dispatchEvent(event(d,'click'));assert.equal(a.api.state.selected.size,1);
  d.querySelectorAll('.selection-hit')[6].dispatchEvent(event(d,'click',{shiftKey:true}));assert.equal(a.api.state.selected.size,6);for(const k of keys.slice(1,7))assert.ok(a.api.state.selected.has(k));
- d.getElementById('multi-toggle').click();assert.equal(a.api.state.selected.size,0);assert.equal(d.getElementById('selection-count').hidden,true);
+ d.getElementById('multi-toggle').click();assert.equal(a.api.state.selected.size,0);assert.equal(d.getElementById('selection-count').textContent,'共 8 个会话');
 });
 test('Shift selection spans unrendered items in current sorted/filtered list',async()=>{
  const a=setup({editing:true});await load(a,230);const keys=[...a.api.state.visibleKeys];a.api.selectRange(keys[2],true);a.api.selectRange(keys[225],true,true);assert.equal(a.api.state.selected.size,224);a.api.selectRange(keys[220],false,true);assert.equal(a.api.state.selected.size,5);
@@ -51,4 +51,21 @@ test('folder and ZIP Save As icons directly open distinct native pickers',async(
 test('long-field comparisons show the actual changed area instead of the unchanged prefix',async()=>{
  const a=setup({editing:true}),fs=memoryFS({'conversations.json':raw()}),opened=await a.ctx.ViewerStorage.directory(fs.root);await a.api.loadEntries(opened.entries,null,opened.source);const r=a.api.state.records[0],prefix='unchanged '.repeat(500);a.api.commit([{doc:r.doc,path:[0,'mapping','a','message','content','parts',0],value:prefix+'OLD-END'}]);assert.equal(await a.api.saveWorkspace(),true);
  a.api.commit([{doc:r.doc,path:[0,'mapping','a','message','content','parts',0],value:prefix+'NEW-END'}]);a.api.showChanges();const preview=a.document.querySelector('#changes-list .change-value').textContent;assert.ok(preview.includes('OLD-END'));assert.ok(preview.includes('NEW-END'));assert.ok(a.document.querySelector('#changes-list details'));
+});
+
+test('selecting stars adds active starred chats across search filters and displays the selection total',async()=>{
+ const a=setup({editing:true}),d=a.document,id=name=>d.getElementById(name);await load(a,4);
+ const [first,second,third,fourth]=a.api.state.records;
+ assert.equal(id('select-starred').disabled,true);
+ for(const r of [first,third,fourth])a.api.toggleStar(r.key);
+ a.api.deleteRecords([fourth.key]);id('search').value='Chat 1';await a.api.renderList();
+ assert.equal(id('selection-count').textContent,'匹配 1 / 3 个会话');
+ a.api.selectRange(second.key,true);id('select-starred').click();
+ assert.deepEqual([...a.api.state.selected].sort(),[first.key,second.key,third.key].sort());
+ assert.equal(id('selection-count').textContent,'已选 3 / 3 项');
+ assert.equal(id('selection-tools').children.length,7);
+ const corner=d.querySelector('.github-corner');
+ assert.equal(corner.getAttribute('href'),'https://github.com/chchaoo/gpt-notebook');
+ assert.ok(corner.parentElement.classList.contains('topbar'));
+ assert.ok(corner.querySelector('.octo-arm'));
 });

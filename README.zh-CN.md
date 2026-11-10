@@ -25,7 +25,7 @@
 | **Obsidian 知识库** | 生成带索引、公式和本地附件的独立聊天笔记。 | [导出到 Obsidian](https://github.com/chchaoo/gpt-notebook/wiki/导出到Obsidian) |
 | **拆分与合并** | 把所选聊天拆成多个资料包，或向另一份资料增量导入。 | [拆分与合并资料](https://github.com/chchaoo/gpt-notebook/wiki/拆分与合并资料) |
 | **阅读与搜索** | 打开目录或 ZIP，搜索全文，切换聊天分支。 | [阅读与搜索](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#阅读与查找) |
-| **编辑与整理** | 开启编辑模式后修改文字、星标、手动排序或撤销。 | [编辑与星标](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#编辑草稿) |
+| **编辑与整理** | 开启编辑模式后修改文字、星标、手动排序或撤销。侧栏可一次选中所有星标会话。 | [编辑与星标](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#编辑草稿) |
 | **保存与恢复** | 保存到资料，查看历史差异并恢复增量备份。 | [保存与历史](https://github.com/chchaoo/gpt-notebook/wiki/保存与历史) |
 | **JSON 与资料副本** | 导出原始结构 JSON、资料文件夹或 ZIP，并带相关附件。 | [导出格式](https://github.com/chchaoo/gpt-notebook/wiki/阅读编辑与导出#导出需要的内容) |
 
